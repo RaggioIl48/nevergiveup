@@ -6,6 +6,7 @@ import { hashPassword, verifyPassword, createSession, userFromToken, destroySess
 import { lessonIndex, lessonOrder, itemIndex, diagnostic, START_INDEX } from "../content/index.js";
 import { levelFromDifficulty } from "../content/grade.js";
 import { validateSong } from "../content/songs.js";
+import { geminiCoach } from "./coach.js";
 
 async function youtubeTitle(videoId) {
   try {
@@ -34,7 +35,7 @@ function localDay(offsetMin, shiftDays = 0) {
   return new Date(Date.now() - offsetMin * 60000 - shiftDays * DAY_MS).toISOString().slice(0, 10);
 }
 
-export function createApp(db, { inviteCode, production = false, distDir = "dist", fetchTitle = youtubeTitle } = {}) {
+export function createApp(db, { inviteCode, production = false, distDir = "dist", fetchTitle = youtubeTitle, coach = geminiCoach } = {}) {
   const app = express();
   app.disable("x-powered-by");
   app.set("trust proxy", 1);
@@ -244,6 +245,29 @@ export function createApp(db, { inviteCode, production = false, distDir = "dist"
     const xp = results.filter((r) => r.ok).length * 2;
     addXp(req.user.id, xp, tzOf(req));
     res.json({ xp });
+  });
+
+  const coachUse = new Map();
+  app.post("/api/speaking/feedback", requireUser, async (req, res) => {
+    if (!coach.available()) return res.json({ available: false });
+    const { prompt, transcript, seconds } = req.body || {};
+    if (typeof prompt !== "string" || typeof transcript !== "string") return res.status(400).json({ error: "Invalid request" });
+    const text = transcript.trim().slice(0, 3000);
+    if (text.split(/\s+/).length < 8) return res.status(400).json({ error: "Speak a little longer so there is something to review" });
+    const day = new Date().toISOString().slice(0, 10);
+    const key = `${req.user.id}:${day}`;
+    const used = coachUse.get(key) || 0;
+    if (used >= 30) return res.status(429).json({ error: "Daily AI feedback limit reached. Try again tomorrow." });
+    coachUse.set(key, used + 1);
+    if (coachUse.size > 5000) coachUse.clear();
+    try {
+      const feedback = await coach.review({ prompt: prompt.slice(0, 600), transcript: text, seconds: Math.max(1, Math.min(300, Math.round(Number(seconds) || 30))) });
+      res.json({ available: true, feedback });
+    } catch (error) {
+      coachUse.set(key, used);
+      if (!production) console.error(error);
+      res.json({ available: false });
+    }
   });
 
   app.post("/api/lab", requireUser, (req, res) => {

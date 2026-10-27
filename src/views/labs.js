@@ -1,8 +1,8 @@
-import { api } from "../api.js";
+﻿import { api } from "../api.js";
 import { h, mount, toast } from "../dom.js";
 import { icon } from "../icons.js";
 import { speak, stopSpeaking, listen, canListen } from "../audio.js";
-import { speakingPrompts, rubric, writingPrompts } from "../../content/labs.js";
+import { speakingPrompts, writingPrompts } from "../../content/labs.js";
 import { evaluateSpeaking } from "../../content/speaking-eval.js";
 import { evaluateWriting } from "../writing-eval.js";
 import { buildGaps, isCorrect, DENSITY } from "../../content/songs.js";
@@ -36,32 +36,52 @@ export async function speakingView(root, ctx) {
     const clockEl = h("p", { class: "timer", "aria-live": "off" }, clock(prompt.prep));
     const transcript = h("textarea", { class: "answer-input", rows: "5", placeholder: canListen ? "Your transcript will appear here as you speak" : "Your browser cannot transcribe speech. Speak aloud and jot down ideas here.", "aria-label": "Transcript" });
     const main = h("button", { class: "key key-primary wide", type: "button" }, "Start prep");
-    const info = h("p", { class: "muted", "aria-live": "polite" }, `Prep: ${prompt.prep}s · Response: ${prompt.time}s`);
+    const info = h("p", { class: "muted", "aria-live": "polite" }, `Prep: ${prompt.prep}s Â· Response: ${prompt.time}s`);
     const rubricBox = h("div", { class: "rubric", hidden: true });
+    const again = h("button", { class: "link", type: "button", hidden: true, onClick: () => { again.hidden = true; finish(); } }, "Review again");
 
-    const finish = () => {
-      cleanup();
-      phase = "done";
-      clockEl.textContent = "Ready";
-      main.textContent = "Save practice (+XP)";
-      const spoken = Math.max(1, prompt.time - Math.max(0, seconds));
-      const result = canListen ? evaluateSpeaking(transcript.value, { seconds: spoken, expected: Math.round(prompt.time * 1.8), promptText: prompt.q, confidence: avgConfidence() }) : null;
+    const showFeedback = (r, source) => {
+      const label = { fluency: "Fluency and coherence", vocabulary: "Vocabulary", grammar: "Grammar", task: "Answering the task", delivery: "Delivery (pace, fluency)", language: "Language use (variety, range)", development: "Topic development (ideas, links)" };
+      rubricBox.replaceChildren(
+        h("h2", {}, `Estimated level: ${r.level}`),
+        h("p", { class: "score-big" }, `${r.overall} / 4`),
+        ...Object.entries(r.scores).map(([k, v]) => h("div", { class: "meter" }, h("span", {}, `${label[k]}: ${v}/4`), h("progress", { max: "4", value: String(v) }))),
+        r.strengths?.length ? h("div", {}, h("h3", {}, "What worked"), h("ul", { class: "notes" }, r.strengths.map((s) => h("li", {}, s)))) : "",
+        r.fixes?.length ? h("div", {}, h("h3", {}, "What to fix"), h("ul", { class: "fixes" }, r.fixes.map((f) => h("li", {},
+          h("span", { class: "fix-said" }, `“${f.said}”`), h("span", { class: "fix-better" }, f.better), h("small", {}, f.why))))) : "",
+        r.notes?.length ? h("ul", { class: "notes" }, r.notes.map((n) => h("li", {}, n))) : "",
+        r.tip ? h("p", { class: "tip-box" }, h("b", {}, "Next time: "), r.tip) : "",
+        h("p", { class: "muted" }, source === "ai" ? "Reviewed by an AI coach from your transcript. It cannot hear your pronunciation." : "Quick estimate from your transcript (AI coach unavailable). It cannot hear your pronunciation."));
       rubricBox.hidden = false;
-      if (result?.scores) {
-        info.textContent = "Automatic estimate from your transcript. It is a guide, not an official score.";
-        const label = { delivery: "Delivery (pace, fluency)", language: "Language use (variety, range)", development: "Topic development (ideas, links)" };
-        rubricBox.replaceChildren(h("h2", {}, `Estimated level: ${result.level}`),
-          h("p", { class: "score-big" }, `${result.overall} / 4`),
-          ...Object.entries(result.scores).map(([k, v]) => h("div", { class: "meter" }, h("span", {}, `${label[k]}: ${v}/4`), h("progress", { max: "4", value: String(v) }))),
-          h("ul", { class: "notes" }, result.notes.map((n) => h("li", {}, n))));
-        return;
-      }
-      if (result) { info.textContent = result.notes[0]; rubricBox.hidden = true; return; }
-      info.textContent = "Your browser cannot transcribe speech, so rate yourself honestly.";
-      rubricBox.replaceChildren(h("h2", {}, "Self-assessment"), ...rubric.map((r) => h("fieldset", {}, h("legend", {}, `${r.label}: ${r.hint}`),
-        h("div", { class: "rate" }, [1, 2, 3].map((n) => h("label", {}, h("input", { type: "radio", name: r.id, value: n }), h("span", {}, ["Needs work", "Fair", "Good"][n - 1])))))));
     };
 
+    const finish = async () => {
+      cleanup();
+      phase = "analysing";
+      clockEl.textContent = "Done";
+      main.disabled = true;
+      const spoken = Math.max(1, prompt.time - Math.max(0, seconds));
+      const text = transcript.value.trim();
+      if (text.split(/\s+/).filter(Boolean).length < 8) {
+        info.textContent = canListen ? "Not enough speech was captured. Check the microphone, or type what you said in the box and press Review." : "Type what you said in the box, then press Review.";
+        main.disabled = false; main.textContent = "Review"; phase = "review";
+        return;
+      }
+      info.textContent = "Reviewing your answer…";
+      try {
+        const res = await api("/speaking/feedback", { prompt: prompt.q, transcript: text, seconds: spoken });
+        if (res.available) showFeedback(res.feedback, "ai");
+        else showFeedback(evaluateSpeaking(text, { seconds: spoken, expected: Math.round(prompt.time * 1.8), promptText: prompt.q, confidence: avgConfidence() }), "local");
+      } catch (e) {
+        showFeedback(evaluateSpeaking(text, { seconds: spoken, expected: Math.round(prompt.time * 1.8), promptText: prompt.q, confidence: avgConfidence() }), "local");
+        toast(e.message);
+      }
+      info.textContent = "Edit the transcript if the recognizer misheard you, then press Review again.";
+      main.disabled = false;
+      main.textContent = "Next prompt (+XP)";
+      again.hidden = false;
+      phase = "done";
+    };
     const startSpeaking = () => {
       phase = "speaking";
       seconds = prompt.time;
@@ -82,6 +102,7 @@ export async function speakingView(root, ctx) {
         timer = setInterval(() => { seconds -= 1; clockEl.textContent = clock(Math.max(0, seconds)); if (seconds <= 0) { clearInterval(timer); startSpeaking(); } }, 1000);
       } else if (phase === "prep") { clearInterval(timer); startSpeaking(); }
       else if (phase === "speaking") finish();
+      else if (phase === "review") finish();
       else if (phase === "done") {
         main.disabled = true;
         try { const res = await api("/lab", { kind: "speaking", ref: prompt.id }); toast(`+${res.xp} XP`); } catch (e) { toast(e.message); }
@@ -94,7 +115,7 @@ export async function speakingView(root, ctx) {
       h("span", { class: "tag" }, prompt.type),
       h("p", { class: "prompt" }, prompt.q),
       h("p", { class: "tip" }, prompt.tip),
-      clockEl, main, info, transcript, rubricBox,
+      clockEl, main, info, transcript, again, rubricBox,
       h("button", { class: "link", type: "button", onClick: () => { prompt = pick(speakingPrompts, prompt.id); render(); } }, "Another prompt"));
   };
   render();
@@ -108,13 +129,13 @@ export async function songsView(root, ctx) {
     songs.length
       ? h("ul", { class: "rows" }, songs.map((s) => h("li", {}, h("a", { class: "row", href: `#/song/${s.id}` },
         h("span", { class: "row-icon" }, icon("Headphones", 28)),
-        h("span", { class: "row-text" }, h("b", {}, s.title), h("small", {}, `${s.level} · added by ${s.addedBy}`)),
+        h("span", { class: "row-text" }, h("b", {}, s.title), h("small", {}, `${s.level} Â· added by ${s.addedBy}`)),
         icon("ChevronRight", 22)))))
       : h("p", { class: "muted" }, "No songs yet. Add the first one!"));
 }
 
 export async function songAddView(root, ctx) {
-  const url = h("input", { class: "answer-input", type: "url", inputmode: "url", autocapitalize: "none", autocorrect: "off", placeholder: "https://www.youtube.com/watch?v=…", "aria-label": "YouTube link" });
+  const url = h("input", { class: "answer-input", type: "url", inputmode: "url", autocapitalize: "none", autocorrect: "off", placeholder: "https://www.youtube.com/watch?v=â€¦", "aria-label": "YouTube link" });
   const title = h("input", { class: "answer-input", type: "text", maxlength: "80", placeholder: "Leave empty to use the video title", "aria-label": "Title (optional)" });
   const lyrics = h("textarea", { class: "answer-input", rows: "10", placeholder: "Paste the lyrics here, one line per row.\nTip: put {braces} around a word to force it to be a blank.", "aria-label": "Lyrics" });
   let level = "B1";
@@ -159,8 +180,8 @@ export async function songView(root, ctx, id) {
   const speedBtn = h("button", { class: "key key-quiet", type: "button", "aria-label": "Playback speed", onClick: () => {
     speedIndex = (speedIndex + 1) % speeds.length;
     player?.setPlaybackRate?.(speeds[speedIndex]);
-    speedBtn.textContent = `${speeds[speedIndex]}×`;
-  } }, "1×");
+    speedBtn.textContent = `${speeds[speedIndex]}Ã—`;
+  } }, "1Ã—");
   const back = h("button", { class: "key key-quiet", type: "button", "aria-label": "Back 5 seconds", onClick: () => player?.seekTo?.(Math.max(0, (player.getCurrentTime?.() || 0) - 5), true) }, icon("RotateCcw", 20), "5s");
   const toggle = h("button", { class: "key key-info", type: "button", onClick: () => {
     if (!player?.getPlayerState) return;
@@ -219,7 +240,7 @@ export async function songView(root, ctx, id) {
   renderLyrics();
   labFrame(root, ctx, song.title, stage, fallback,
     h("div", { class: "audio-row" }, toggle, back, speedBtn),
-    h("p", { class: "muted" }, `${song.level} · added by ${song.addedBy}. Song lyrics can be hard to hear, and they are not always correct English.`),
+    h("p", { class: "muted" }, `${song.level} Â· added by ${song.addedBy}. Song lyrics can be hard to hear, and they are not always correct English.`),
     h("fieldset", { class: "rubric" }, h("legend", {}, "Blanks"), h("div", { class: "rate" }, levels)),
     lyricsBox, score,
     h("div", { class: "audio-row" }, check, reveal, retry), remove);
@@ -249,8 +270,8 @@ export async function writingView(root, ctx) {
     canvas.addEventListener("pointermove", (e) => { if (drawing) { g.lineTo(...at(e)); g.stroke(); } });
     for (const t of ["pointerup", "pointercancel"]) canvas.addEventListener(t, () => { drawing = false; });
     const text = h("textarea", { class: "answer-input", rows: "8", placeholder: "Transcribe your handwritten text here", "aria-label": "Text transcription" });
-    const count = h("p", { class: "muted", "aria-live": "polite" }, `0 words · minimum ${prompt.min}`);
-    text.addEventListener("input", () => { const n = text.value.trim() ? text.value.trim().split(/\s+/).length : 0; count.textContent = `${n} words · minimum ${prompt.min}`; });
+    const count = h("p", { class: "muted", "aria-live": "polite" }, `0 words Â· minimum ${prompt.min}`);
+    text.addEventListener("input", () => { const n = text.value.trim() ? text.value.trim().split(/\s+/).length : 0; count.textContent = `${n} words Â· minimum ${prompt.min}`; });
     const feedback = h("div", { class: "feedback-card", hidden: true });
     const photo = h("img", { class: "photo", alt: "Photo of your text", hidden: true });
     const file = h("input", { type: "file", accept: "image/*", capture: "environment", class: "sr", id: "photo", onChange: () => { const f = file.files?.[0]; if (f) { photo.src = URL.createObjectURL(f); photo.hidden = false; } } });

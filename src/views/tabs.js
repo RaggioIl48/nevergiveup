@@ -52,10 +52,15 @@ export async function homeView(root, ctx) {
     root.append(h("p", { class: "level-line" }, "Estimated level: ", h("b", {}, me.user.level), " · Goal: B2"));
   }
   root.append(h("div", { class: "section-head" }, h("h2", {}, "Your path to B2"), h("span", {}, `${Object.keys(me.progress).length} lessons tracked`)));
+  const unitOf = (id) => units.find((u) => u.lessons.some((l) => l.id === id))?.id;
+  const currentUnit = unitOf(nextId) || units[0].id;
   for (const unit of units) {
-    root.append(h("section", { class: "unit" },
-      h("h2", {}, `${unit.id.slice(1)} · ${unit.title}`),
-      h("p", { class: "muted" }, unit.focus),
+    const done = unit.lessons.filter((l) => me.progress[l.id] >= MASTERY).length;
+    root.append(h("details", { class: "unit", open: unit.id === currentUnit },
+      h("summary", { class: "unit-head" },
+        h("span", { class: "unit-title" }, h("b", {}, `${unit.id.slice(1)} · ${unit.title}`), h("small", {}, unit.focus)),
+        h("span", { class: "unit-count" }, `${done}/${unit.lessons.length}`),
+        icon("ChevronRight", 20)),
       h("ol", { class: "path" }, unit.lessons.map((lesson, i) => {
         const open = unlocked(me, lesson.id);
         const best = me.progress[lesson.id];

@@ -78,3 +78,8 @@ Practice > Songs: a member pastes a YouTube link and the lyrics; blanks are gene
 
 Practice > Listening exams: timed TOEFL, IELTS, Cambridge B2 First and Real voices simulations. They draw from a bank of 158 recordings (74 real LibriSpeech voices, CC BY 4.0; 84 conversations, lectures and talks read by the device's synthetic voices), avoid recordings already seen, and play once. Scores are rough estimates, not official results. Speaking is scored automatically from the browser transcript (pace, variety, links, topic); browsers without speech recognition fall back to self-assessment.
 
+
+## AI speaking coach
+
+Set GEMINI_API_KEY (free key from Google AI Studio) on the server to get written feedback on speaking answers: level, four scores, what worked, specific fixes and a tip. Optional GEMINI_MODEL (default gemini-2.5-flash). Limit: 30 reviews per user per day. Without a key the app falls back to a local estimate. Only the transcript text is sent, never audio. On Google's free tier, prompts may be used to improve their products, so tell members before enabling it.
+
