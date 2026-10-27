@@ -248,7 +248,7 @@ export function createApp(db, { inviteCode, production = false, distDir = "dist"
 
   app.post("/api/lab", requireUser, (req, res) => {
     const { kind } = req.body || {};
-    const xp = { speaking: 12, listening: 10, song: 10 }[kind];
+    const xp = { speaking: 12, listening: 10, song: 10, exam: 30 }[kind];
     if (!xp) return res.status(400).json({ error: "Invalid type" });
     addXp(req.user.id, xp, tzOf(req));
     res.json({ xp });

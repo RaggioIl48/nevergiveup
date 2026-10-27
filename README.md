@@ -73,3 +73,8 @@ rsc-harness (`.github/`, `02-DOCS/`), REA (`.vscode/mcp.json`) e Impeccable (`PR
 
 Practice > Songs: a member pastes a YouTube link and the lyrics; blanks are generated automatically (Easy/Medium/Hard) or forced with {braces}. Songs and lyrics are stored only in the private database, never in the repo. The video plays through the YouTube embed (no time sync). Only add lyrics your group may use.
 
+
+## Listening exams and speaking score
+
+Practice > Listening exams: timed TOEFL, IELTS, Cambridge B2 First and Real voices simulations. They draw from a bank of 158 recordings (74 real LibriSpeech voices, CC BY 4.0; 84 conversations, lectures and talks read by the device's synthetic voices), avoid recordings already seen, and play once. Scores are rough estimates, not official results. Speaking is scored automatically from the browser transcript (pace, variety, links, topic); browsers without speech recognition fall back to self-assessment.
+

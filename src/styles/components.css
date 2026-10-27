@@ -227,3 +227,25 @@ fieldset.rubric { border: 0; padding: 0; margin: 12px 0; }
 .gap:focus { outline: none; border-color: var(--info); }
 .gap.ok { border-color: var(--signal); color: var(--signal); }
 .gap.bad { border-color: var(--wrong); color: var(--wrong-text); }
+
+.exam-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; position: sticky; top: 0; z-index: 2; padding: 8px 0; background: var(--paper); }
+.exam-bar .timer { margin: 0; font-size: 1.25rem; }
+.choice.picked { border-color: var(--info); background: var(--info-soft); }
+.answer-input.ok { border-color: var(--signal); }
+.answer-input.bad { border-color: var(--wrong); }
+.score-big { font-size: 2.5rem; font-weight: 800; margin: 8px 0 0; }
+.est { display: flex; gap: 12px; margin: 12px 0; }
+.est > div { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 14px; background: var(--surface); border: 2px solid var(--line); border-radius: var(--r-lg); }
+.est b { font-size: 1.5rem; }
+.est small { color: var(--muted); }
+.meter { display: flex; flex-direction: column; gap: 4px; margin: 10px 0; }
+.meter progress { width: 100%; height: 12px; accent-color: var(--signal); }
+.notes { padding-left: 20px; color: var(--muted); }
+.review { background: var(--surface); border: 2px solid var(--line); border-radius: var(--r-lg); padding: 12px 14px; margin: 10px 0; }
+.review summary { font-weight: 700; min-height: var(--tap); display: flex; align-items: center; }
+.review ul { list-style: none; padding: 0; margin: 8px 0; display: flex; flex-direction: column; gap: 10px; }
+.review li { display: flex; flex-direction: column; }
+.review small { color: var(--muted); }
+.r-ok b { color: var(--signal); }
+.r-bad b { color: var(--wrong-text); }
+.transcript-text { color: var(--muted); font-size: 0.9375rem; }

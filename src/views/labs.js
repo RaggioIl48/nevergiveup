@@ -3,7 +3,7 @@ import { h, mount, toast } from "../dom.js";
 import { icon } from "../icons.js";
 import { speak, stopSpeaking, listen, canListen } from "../audio.js";
 import { speakingPrompts, rubric, writingPrompts } from "../../content/labs.js";
-import { realListening, audioCredits } from "../../content/real-listening.js";
+import { evaluateSpeaking } from "../../content/speaking-eval.js";
 import { evaluateWriting } from "../writing-eval.js";
 import { buildGaps, isCorrect, DENSITY } from "../../content/songs.js";
 import { loadYouTube } from "../youtube.js";
@@ -14,7 +14,7 @@ const pick = (list, avoid) => {
 };
 const clock = (s) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 
-function labFrame(root, ctx, title, ...children) {
+export function labFrame(root, ctx, title, ...children) {
   mount(root, h("div", { class: "lab" },
     h("header", { class: "lab-top" }, h("a", { class: "icon-btn", href: "#/practice", "aria-label": "Back" }, icon("ChevronLeft", 24)), h("h1", {}, title)),
     h("main", { class: "lab-body" }, children)));
@@ -31,6 +31,8 @@ export async function speakingView(root, ctx) {
     cleanup();
     let phase = "idle";
     let seconds = 0;
+    let confidences = [];
+    const avgConfidence = () => (confidences.length ? confidences.reduce((a, b) => a + b, 0) / confidences.length : null);
     const clockEl = h("p", { class: "timer", "aria-live": "off" }, clock(prompt.prep));
     const transcript = h("textarea", { class: "answer-input", rows: "5", placeholder: canListen ? "Your transcript will appear here as you speak" : "Your browser cannot transcribe speech. Speak aloud and jot down ideas here.", "aria-label": "Transcript" });
     const main = h("button", { class: "key key-primary wide", type: "button" }, "Start prep");
@@ -42,20 +44,32 @@ export async function speakingView(root, ctx) {
       phase = "done";
       clockEl.textContent = "Ready";
       main.textContent = "Save practice (+XP)";
-      info.textContent = "Listen to your response and rate yourself honestly.";
-      const scores = {};
+      const spoken = Math.max(1, prompt.time - Math.max(0, seconds));
+      const result = canListen ? evaluateSpeaking(transcript.value, { seconds: spoken, expected: Math.round(prompt.time * 1.8), promptText: prompt.q, confidence: avgConfidence() }) : null;
       rubricBox.hidden = false;
+      if (result?.scores) {
+        info.textContent = "Automatic estimate from your transcript. It is a guide, not an official score.";
+        const label = { delivery: "Delivery (pace, fluency)", language: "Language use (variety, range)", development: "Topic development (ideas, links)" };
+        rubricBox.replaceChildren(h("h2", {}, `Estimated level: ${result.level}`),
+          h("p", { class: "score-big" }, `${result.overall} / 4`),
+          ...Object.entries(result.scores).map(([k, v]) => h("div", { class: "meter" }, h("span", {}, `${label[k]}: ${v}/4`), h("progress", { max: "4", value: String(v) }))),
+          h("ul", { class: "notes" }, result.notes.map((n) => h("li", {}, n))));
+        return;
+      }
+      if (result) { info.textContent = result.notes[0]; rubricBox.hidden = true; return; }
+      info.textContent = "Your browser cannot transcribe speech, so rate yourself honestly.";
       rubricBox.replaceChildren(h("h2", {}, "Self-assessment"), ...rubric.map((r) => h("fieldset", {}, h("legend", {}, `${r.label}: ${r.hint}`),
-        h("div", { class: "rate" }, [1, 2, 3].map((n) => h("label", {}, h("input", { type: "radio", name: r.id, value: n, onChange: () => { scores[r.id] = n; } }), h("span", {}, ["Needs work", "Fair", "Good"][n - 1])))))));
+        h("div", { class: "rate" }, [1, 2, 3].map((n) => h("label", {}, h("input", { type: "radio", name: r.id, value: n }), h("span", {}, ["Needs work", "Fair", "Good"][n - 1])))))));
     };
 
     const startSpeaking = () => {
       phase = "speaking";
       seconds = prompt.time;
+      confidences = [];
       clockEl.textContent = clock(seconds);
       main.textContent = "Finish";
       info.textContent = "Speak now, in English.";
-      if (canListen) rec = listen({ continuous: true, onText: (t) => { transcript.value = t; }, onError: () => { info.textContent = "Allow microphone access for transcription (optional)."; } });
+      if (canListen) rec = listen({ continuous: true, onText: (t) => { transcript.value = t; }, onConfidence: (c) => { confidences = c; }, onError: () => { info.textContent = "Allow microphone access so the platform can score you."; } });
       timer = setInterval(() => { seconds -= 1; clockEl.textContent = clock(Math.max(0, seconds)); if (seconds <= 0) finish(); }, 1000);
     };
 
@@ -82,37 +96,6 @@ export async function speakingView(root, ctx) {
       h("p", { class: "tip" }, prompt.tip),
       clockEl, main, info, transcript, rubricBox,
       h("button", { class: "link", type: "button", onClick: () => { prompt = pick(speakingPrompts, prompt.id); render(); } }, "Another prompt"));
-  };
-  render();
-}
-
-export async function listeningView(root, ctx) {
-  let passage = pick(realListening);
-  const render = () => {
-    const answers = [];
-    const status = h("p", { class: "muted", "aria-live": "polite" }, "Listen to the passage. You can replay it.");
-    const questions = passage.questions.map((q, qi) => {
-      const buttons = q.options.map((text, oi) => h("button", { class: "choice", type: "button", onClick: () => {
-        if (answers[qi] !== undefined) return;
-        answers[qi] = oi === q.a;
-        buttons.forEach((b, i) => { b.disabled = true; if (i === q.a) b.classList.add("correct"); else if (i === oi) b.classList.add("wrong"); });
-        if (answers.filter((a) => a !== undefined).length === passage.questions.length) finish();
-      } }, text));
-      return h("fieldset", { class: "q" }, h("legend", {}, q.q), h("div", { class: "choices" }, buttons));
-    });
-    const finish = async () => {
-      const right = answers.filter(Boolean).length;
-      status.textContent = `Result: ${right}/${passage.questions.length}. Read the transcript and compare it with what you heard.`;
-      try { await api("/lab", { kind: "listening", ref: passage.id }); } catch { /* no XP */ }
-      const box = h("div", { class: "transcript" }, h("h2", {}, "Transcript"), h("p", {}, passage.text),
-        h("button", { class: "key key-primary wide", type: "button", onClick: () => { passage = pick(realListening, passage.id); render(); } }, "Another passage"));
-      document.querySelector(".lab-body").append(box);
-    };
-    labFrame(root, ctx, passage.title,
-      h("span", { class: "tag" }, `${passage.level} · real voice`),
-      h("audio", { class: "player", controls: true, preload: "auto", src: passage.audio, "aria-label": "Real voice recording" }),
-      status, questions,
-      h("p", { class: "muted" }, audioCredits));
   };
   render();
 }
