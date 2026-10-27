@@ -50,8 +50,21 @@ test("content: ids unique and answers valid", () => {
   assert.equal(itemIndex.size, all.length);
 });
 
-test("content: lessons have 6 exercises and the lab banks are well formed", () => {
+test("content: B2 route and lab banks grow without losing their structure", () => {
+  assert.equal(units.length, 7);
+  assert.equal(units.reduce((total, unit) => total + unit.lessons.length, 0), 21);
+  assert.equal(units.reduce((total, unit) => total + unit.lessons.reduce((n, lesson) => n + lesson.exercises.length, 0), 0), 126);
   for (const u of units) for (const l of u.lessons) assert.equal(l.exercises.length, 6, l.id);
-  for (const p of listeningPassages) for (const q of p.questions) assert.ok(q.a < q.options.length);
-  assert.ok(speakingPrompts.length >= 10 && writingPrompts.length >= 6);
+  assert.equal(new Set(speakingPrompts.map((prompt) => prompt.id)).size, speakingPrompts.length);
+  assert.equal(new Set(listeningPassages.map((passage) => passage.id)).size, listeningPassages.length);
+  assert.equal(new Set(writingPrompts.map((prompt) => prompt.id)).size, writingPrompts.length);
+  assert.equal(speakingPrompts.length, 17);
+  assert.equal(listeningPassages.length, 7);
+  assert.equal(writingPrompts.length, 12);
+  for (const p of listeningPassages) {
+    for (const q of p.questions) assert.ok(q.a >= 0 && q.a < q.options.length);
+    if (p.id === "l6" || p.id === "l7") assert.ok(new Set(p.questions.map((q) => q.a)).size > 1, p.id);
+  }
+  for (const prompt of speakingPrompts) assert.ok(prompt.q && prompt.tip && prompt.prep > 0 && prompt.time > 0, prompt.id);
+  for (const prompt of writingPrompts) assert.ok(prompt.q && prompt.min >= 100, prompt.id);
 });

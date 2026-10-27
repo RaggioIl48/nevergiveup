@@ -5,7 +5,8 @@ Plataforma de inglés (B1 → B2, orientada a TOEFL/similares) para un grupo de 
 ## Qué incluye
 
 - Diagnóstico adaptativo (20 preguntas) que estima tu nivel y coloca tu punto de partida.
-- Ruta de 6 unidades / 18 lecciones / 108 ejercicios (dominio = 80 % a la primera).
+- Ruta de 7 unidades / 21 lecciones / 126 ejercicios (dominio = 80 % a la primera).
+- Laboratorios con 17 prácticas de speaking, 7 textos de listening y 12 propuestas de writing a mano.
 - Repaso espaciado de errores, laboratorios de speaking, listening y writing a mano.
 - Cuentas por código de invitación, racha, meta diaria, XP y ranking semanal.
 

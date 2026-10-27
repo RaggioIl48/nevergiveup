@@ -190,6 +190,36 @@ const unitsRaw = [
       ]],
     ],
   },
+  {
+    title: "Integrar y rendir",
+    focus: "B2: escucha académica, inferencias y respuestas claras",
+    lessons: [
+      ["Comprender una charla académica", [
+        ls("Today I'd like to explain why urban gardens can help cities manage heat. Plants provide shade, and the soil absorbs rainwater. However, these gardens require regular care, so local residents need to be involved from the beginning.", "What is the lecturer's main point?", ["Urban gardens help with heat and rain, but need community support.", "Cities should replace every park with a garden.", "Residents should avoid planting near buildings.", "Rainwater is the only problem in cities."], 0, "Resume el beneficio doble y la condición de mantenimiento; escucha la idea general y la limitación que introduce however."),
+        di("The lecturer argues that local support is essential for the project to succeed."),
+        sh("Although the plan is promising, it will only work if residents take part."),
+        ch("In the lecture, 'However' signals ___.", ["a contrast or limitation", "a repeated example", "a conclusion", "a cause"], 0, "However introduce una idea que limita o contrasta." , "Identifica la función del conector, no una palabra aislada."),
+        ls("We expected the new bus route to save time. In practice, the journey is shorter only during off-peak hours, because traffic still slows buses in the morning.", "When is the new route most likely to save time?", ["During off-peak hours", "Only on weekday mornings", "At every time of day", "Only when it rains"], 0, "El beneficio ocurre fuera de horas punta: distingue la expectativa inicial de la evidencia posterior."),
+        mt([["claim", "afirmación principal"], ["evidence", "prueba o dato"], ["limitation", "límite de una propuesta"], ["implication", "consecuencia sugerida"]], "Reconoce la función de cada parte de un argumento."),
+      ]],
+      ["Leer entre líneas", [
+        rd("The council's pilot scheme attracted fewer cyclists than expected. Yet the streets included in the scheme saw a noticeable drop in noise complaints. Although the council has not announced a permanent plan, officials say they will review the results before the summer.", "What can be inferred about the scheme?", ["It may have had a benefit beyond attracting cyclists.", "The council has already made it permanent.", "Noise complaints increased.", "Officials will stop collecting results."], 0, "El descenso de quejas es un beneficio adicional, aunque el plan no sea definitivo." , "Una inferencia debe apoyarse en detalles del texto, no en una suposición."),
+        ty("The council has not made a ___ decision about the scheme. (final)", ["final"], "Permanent plan no anunciado: la decisión definitiva aún no se ha tomado."),
+        fx("Although the results were promising, but the council wants more data.", 5, "No combines although and but in the same clause: Although the results were promising, the council wants more data."),
+        tr("Combine: 'The course is useful. It is quite demanding.' Use although.", ["Although the course is useful, it is quite demanding", "The course is useful although it is quite demanding"], "Although introduce una concesión y conecta dos ideas contrastantes."),
+        rd("Some researchers favour short, frequent breaks because they can restore attention. Others argue that interruptions make complex tasks harder to resume. The disagreement may reflect the kind of work being done rather than a single best routine.", "What is the writer's conclusion?", ["The best break pattern may depend on the task.", "All workers should take breaks every hour.", "Breaks always reduce productivity.", "Researchers agree on one routine."], 0, "La conclusión matiza: la rutina adecuada depende del tipo de trabajo." , "Presta atención a la frase final, que resuelve el contraste."),
+        ch("The phrase 'may reflect' expresses ___.", ["cautious possibility", "certainty", "a past habit", "an instruction"], 0, "May expresa posibilidad y evita afirmar una conclusión absoluta." , "B2 académico suele matizar las afirmaciones."),
+      ]],
+      ["Responder con claridad", [
+        tr("Make the claim more cautious: 'Online courses are always better.' Start: Online courses may ...", ["Online courses may be more effective for some learners", "Online courses may be better for some learners"], "Una respuesta académica evita generalizaciones absolutas y delimita su alcance."),
+        ch("Which sentence best introduces evidence?", ["For example, the survey found that most commuters saved ten minutes.", "Everyone knows commuting is bad.", "I strongly feel the survey is right.", "The result is good and stuff."], 0, "La primera frase presenta una evidencia específica y formal." , "Diferencia un dato concreto de una impresión personal."),
+        ty("The proposal is affordable; ___, it may not be practical for rural areas. (however)", ["however"], "However conecta una ventaja con una limitación."),
+        or("the / although / expensive / is / solution / effective / remains / the / solution", "Although the solution is expensive the solution remains effective", "La cláusula con although va seguida de la idea principal; revisa el orden natural."),
+        fx("The data suggests that the new methods are more reliable.", 2, "Data se trata aquí como plural: the data suggest that the methods are more reliable."),
+        sh("On balance, the evidence supports the proposal, although further research is needed."),
+      ]],
+    ],
+  },
 ];
 
 export const units = unitsRaw.map((unit, ui) => ({

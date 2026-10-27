@@ -11,6 +11,11 @@ export const speakingPrompts = [
   { id: "s10", type: "Resumen", prep: 20, time: 60, q: "Imagine a friend says: 'I always postpone important tasks until the last minute.' Give advice and explain it.", tip: "Usa should, why don't you, it might help to." },
   { id: "s11", type: "Resumen", prep: 20, time: 60, q: "Explain to a new colleague how to use an app you use every day.", tip: "Secuencia clara: first, next, after that, finally." },
   { id: "s12", type: "Resumen", prep: 20, time: 60, q: "Describe a news story you heard recently and say what you think about it.", tip: "Estilo indirecto: it was reported that..." },
+  { id: "s13", type: "Opinión", prep: 20, time: 60, q: "Should universities make work experience or an internship part of every degree?", tip: "Explica una ventaja, un posible coste y tu postura final." },
+  { id: "s14", type: "Opinión", prep: 20, time: 60, q: "Some cities are considering charging drivers to enter busy areas. Is this a fair way to reduce traffic?", tip: "Define quién se beneficia y quién podría verse perjudicado." },
+  { id: "s15", type: "Resumen", prep: 20, time: 60, q: "Describe a time when new information changed your opinion about a decision.", tip: "Cuenta qué pensabas antes, qué aprendiste y qué decidiste." },
+  { id: "s16", type: "Resumen", prep: 20, time: 60, q: "Explain one practical change your school or workplace could make to reduce waste.", tip: "Presenta el cambio, cómo se aplicaría y cómo medirías el resultado." },
+  { id: "s17", type: "Opinión", prep: 20, time: 60, q: "Is it more important for a public library to offer quiet study space or community events?", tip: "Compara necesidades distintas y matiza tu respuesta." },
 ];
 
 export const rubric = [
@@ -66,6 +71,26 @@ export const listeningPassages = [
       { q: "How is the hybrid model viewed?", options: ["As a compromise", "As a failure", "As illegal", "As temporary"], a: 0 },
     ],
   },
+  {
+    id: "l6", title: "Un proyecto de energía",
+    text: "The town is considering installing solar panels on the community centre. The project would reduce electricity costs over time, but the initial installation is expensive. A local grant could cover part of the cost. The committee will decide in June after residents have reviewed the full budget.",
+    questions: [
+      { q: "What is one expected long-term benefit?", options: ["More parking spaces", "Lower electricity costs", "A larger committee", "Free equipment for every home"], a: 1 },
+      { q: "What is the main difficulty?", options: ["The centre is closed", "There is no sunlight", "The initial cost", "Residents cannot review the plan"], a: 2 },
+      { q: "How might the town reduce the cost?", options: ["Apply for a local grant", "Delay the decision for a year", "Sell the community centre", "Raise electricity prices"], a: 0 },
+      { q: "When will the committee decide?", options: ["Next week", "After the panels are installed", "At the end of the year", "In June"], a: 3 },
+    ],
+  },
+  {
+    id: "l7", title: "Tomar apuntes en una conferencia",
+    text: "When you attend a lecture, writing down every sentence can make it difficult to follow the speaker. Instead, note the main claim and the evidence that supports it. Leave space to add questions later. If the speaker gives an example, record only the details that help explain the main idea.",
+    questions: [
+      { q: "Why should students avoid writing every sentence?", options: ["The lecturer will change the topic.", "Their notes will be too short.", "It can stop them following the speaker.", "Examples are never useful."], a: 2 },
+      { q: "What should notes include?", options: ["Every word from the lecture", "The main claim and supporting evidence", "Only the speaker's questions", "A list of unrelated facts"], a: 1 },
+      { q: "Why leave space in the notes?", options: ["To copy the full lecture", "To write the conclusion first", "To avoid listening", "To add questions later"], a: 3 },
+      { q: "Which details from an example should be recorded?", options: ["Those that explain the main idea", "Every detail the speaker mentions", "Only names and dates", "Details unrelated to the claim"], a: 0 },
+    ],
+  },
 ];
 
 export const writingPrompts = [
@@ -77,4 +102,8 @@ export const writingPrompts = [
   { id: "w6", type: "Ensayo", min: 150, q: "What are the advantages and disadvantages of working from home?" },
   { id: "w7", type: "Ensayo", min: 150, q: "Is social media good or bad for young people? Give reasons and examples." },
   { id: "w8", type: "Informal", min: 100, q: "Write a message to a friend inviting them to visit you and describing what you will do." },
+  { id: "w9", type: "Ensayo", min: 150, q: "Should local governments spend more on public transport or on maintaining roads? Support your view with reasons." },
+  { id: "w10", type: "Correo formal", min: 120, q: "Write to your college asking for more information about a course that may fit your schedule. Ask about its timetable, requirements and cost." },
+  { id: "w11", type: "Comparación", min: 150, q: "Compare learning a language in a classroom with learning it independently online. Which approach would suit you better?" },
+  { id: "w12", type: "Ensayo", min: 150, q: "Some people believe that cities should create more green spaces even if this means fewer parking spaces. Discuss both sides and give your opinion." },
 ];
