@@ -39,6 +39,7 @@ const firstB1 = firstLessonIndex("B1");
 const firstB2 = firstLessonIndex("B2");
 
 export const START_INDEX = {
+  A1: 0,
   A2: firstLessonIndex("A2"),
   B1: firstB1,
   "B1+": firstB1 + 3,

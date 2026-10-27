@@ -69,6 +69,7 @@ export function grade(item, response) {
 }
 
 export function levelFromDifficulty(score) {
+  if (score < 1) return "A1";
   if (score < 1.8) return "A2";
   if (score < 2.6) return "B1";
   if (score < 3.4) return "B1+";

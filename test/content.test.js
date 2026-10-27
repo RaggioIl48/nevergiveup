@@ -30,6 +30,7 @@ test("similarity counts words once", () => {
 });
 
 test("levelFromDifficulty thresholds", () => {
+  assert.equal(levelFromDifficulty(0.5), "A1");
   assert.equal(levelFromDifficulty(1), "A2");
   assert.equal(levelFromDifficulty(2), "B1");
   assert.equal(levelFromDifficulty(3.5), "B2");

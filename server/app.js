@@ -182,7 +182,7 @@ export function createApp(db, { inviteCode, production = false, distDir = "dist"
       if (ok) skill.ok += 1;
       bySkill.set(item.skill, skill);
     }
-    let estimate = 1;
+    let estimate = 0;
     for (let lvl = 1; lvl <= 5; lvl += 1) {
       const g = byLevel.get(lvl);
       if (g && g.n >= 2 && g.ok / g.n >= 0.6) estimate = lvl;

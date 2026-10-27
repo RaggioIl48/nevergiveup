@@ -59,7 +59,7 @@ export async function diagnosticView(root, ctx) {
           await ctx.refresh();
           resultScreen(root, {
             title: `Your estimated level: ${res.level}`,
-            lines: ["This is an estimate, not an official score.", res.startIndex > 0 ? "More advanced lessons are now unlocked." : "You will start with the basics to strengthen your B1."],
+            lines: ["This is an estimate, not an official score.", res.startIndex > 0 ? "More advanced lessons are now unlocked." : "You will start with the basics (the route begins at A2) and build up to B2."],
             primary: h("a", { class: "key key-primary wide", href: "#/home" }, "View my path"),
           });
         } catch (e) {
