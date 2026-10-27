@@ -1,0 +1,284 @@
+import express from "express";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
+import { timingSafeEqual } from "node:crypto";
+import { hashPassword, verifyPassword, createSession, userFromToken, destroySession, parseCookies, createRateLimiter } from "./auth.js";
+import { lessonIndex, lessonOrder, itemIndex, diagnostic } from "../content/index.js";
+import { levelFromDifficulty } from "../content/grade.js";
+
+const COOKIE = "upword_sid";
+const MASTERY = 80;
+const DAILY_GOAL = 30;
+const BOX_DAYS = [1, 3, 7, 14, 30, 60];
+const DAY_MS = 86400000;
+const START_INDEX = { A2: 0, B1: 0, "B1+": 3, B2: 9, "B2+": 12 };
+
+const safeEqual = (a, b) => {
+  const x = Buffer.from(String(a));
+  const y = Buffer.from(String(b));
+  return x.length === y.length && timingSafeEqual(x, y);
+};
+
+function localDay(offsetMin, shiftDays = 0) {
+  return new Date(Date.now() - offsetMin * 60000 - shiftDays * DAY_MS).toISOString().slice(0, 10);
+}
+
+export function createApp(db, { inviteCode, production = false, distDir = "dist" } = {}) {
+  const app = express();
+  app.disable("x-powered-by");
+  app.set("trust proxy", 1);
+  app.use((req, res, next) => {
+    res.set({
+      "X-Content-Type-Options": "nosniff",
+      "Referrer-Policy": "same-origin",
+      "Content-Security-Policy": "default-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'",
+    });
+    next();
+  });
+  app.use(express.json({ limit: "100kb" }));
+
+  const authLimit = createRateLimiter(10, 10 * 60 * 1000);
+  const tzOf = (req) => {
+    const value = Number(req.get("x-tz-offset"));
+    return Number.isFinite(value) && Math.abs(value) <= 840 ? value : 0;
+  };
+
+  const setCookie = (req, res, token, maxAge) => {
+    const parts = [`${COOKIE}=${token}`, "Path=/", "HttpOnly", "SameSite=Lax", `Max-Age=${maxAge}`];
+    if (req.secure) parts.push("Secure");
+    res.append("Set-Cookie", parts.join("; "));
+  };
+
+  const requireUser = (req, res, next) => {
+    const user = userFromToken(db, parseCookies(req.get("cookie"))[COOKIE]);
+    if (!user) return res.status(401).json({ error: "Sesión no válida" });
+    req.user = user;
+    next();
+  };
+
+  const addXp = (userId, xp, offset) => {
+    if (xp <= 0) return;
+    db.prepare(
+      "INSERT INTO activity (user_id, day, xp) VALUES (?, ?, ?) ON CONFLICT(user_id, day) DO UPDATE SET xp = xp + excluded.xp",
+    ).run(userId, localDay(offset), xp);
+  };
+
+  const recordResults = (userId, results, reviewMode) => {
+    const now = Date.now();
+    for (const { id, ok } of results) {
+      const row = db.prepare("SELECT box FROM mistakes WHERE user_id = ? AND item_id = ?").get(userId, id);
+      if (!ok) {
+        db.prepare(
+          "INSERT INTO mistakes (user_id, item_id, box, due_at) VALUES (?, ?, 0, ?) ON CONFLICT(user_id, item_id) DO UPDATE SET box = 0, due_at = excluded.due_at",
+        ).run(userId, id, now + DAY_MS);
+      } else if (row && reviewMode) {
+        const box = Math.min(row.box + 1, BOX_DAYS.length - 1);
+        db.prepare("UPDATE mistakes SET box = ?, due_at = ? WHERE user_id = ? AND item_id = ?").run(box, now + BOX_DAYS[box] * DAY_MS, userId, id);
+      }
+    }
+  };
+
+  const cleanResults = (results, allowed) => {
+    if (!Array.isArray(results) || results.length > 60) return null;
+    const seen = new Set();
+    const out = [];
+    for (const entry of results) {
+      if (!entry || typeof entry.id !== "string" || typeof entry.ok !== "boolean") return null;
+      if (!allowed(entry.id) || seen.has(entry.id)) return null;
+      seen.add(entry.id);
+      out.push({ id: entry.id, ok: entry.ok });
+    }
+    return out;
+  };
+
+  const streakOf = (userId, offset) => {
+    const days = new Set(db.prepare("SELECT day FROM activity WHERE user_id = ? AND xp > 0").all(userId).map((r) => r.day));
+    let cursor = days.has(localDay(offset)) ? 0 : 1;
+    let streak = 0;
+    while (days.has(localDay(offset, cursor))) {
+      streak += 1;
+      cursor += 1;
+    }
+    return streak;
+  };
+
+  const profile = (user, offset) => {
+    const progress = Object.fromEntries(db.prepare("SELECT lesson_id, best FROM progress WHERE user_id = ?").all(user.id).map((r) => [r.lesson_id, r.best]));
+    const total = db.prepare("SELECT COALESCE(SUM(xp), 0) AS xp FROM activity WHERE user_id = ?").get(user.id).xp;
+    const today = db.prepare("SELECT COALESCE(SUM(xp), 0) AS xp FROM activity WHERE user_id = ? AND day = ?").get(user.id, localDay(offset)).xp;
+    const week = [];
+    for (let i = 6; i >= 0; i -= 1) {
+      const day = localDay(offset, i);
+      const row = db.prepare("SELECT xp FROM activity WHERE user_id = ? AND day = ?").get(user.id, day);
+      week.push({ day, xp: row ? row.xp : 0 });
+    }
+    const due = db.prepare("SELECT COUNT(*) AS n FROM mistakes WHERE user_id = ? AND due_at <= ?").get(user.id, Date.now()).n;
+    return {
+      user: { name: user.name, level: user.level, skills: user.skills ? JSON.parse(user.skills) : null, startIndex: user.level ? START_INDEX[user.level] ?? 0 : 0 },
+      xp: total,
+      todayXp: today,
+      dailyGoal: DAILY_GOAL,
+      streak: streakOf(user.id, offset),
+      progress,
+      week,
+      dueCount: due,
+    };
+  };
+
+  const isUnlocked = (user, progress, lessonId) => {
+    const index = lessonOrder.indexOf(lessonId);
+    if (index < 0) return false;
+    const start = user.level ? START_INDEX[user.level] ?? 0 : 0;
+    if (index === 0 || index <= start) return true;
+    return (progress[lessonOrder[index - 1]] ?? 0) >= MASTERY;
+  };
+
+  app.post("/api/register", (req, res) => {
+    if (!authLimit(`r:${req.ip}`)) return res.status(429).json({ error: "Demasiados intentos. Espera unos minutos." });
+    const { name, password, invite } = req.body || {};
+    if (!inviteCode || typeof invite !== "string" || !safeEqual(invite.trim(), inviteCode)) return res.status(403).json({ error: "Código de invitación incorrecto" });
+    if (typeof name !== "string" || !/^[\p{L}\p{N} ._-]{2,24}$/u.test(name.trim())) return res.status(400).json({ error: "El nombre debe tener 2 a 24 caracteres" });
+    if (typeof password !== "string" || password.length < 6 || password.length > 100) return res.status(400).json({ error: "La contraseña debe tener al menos 6 caracteres" });
+    try {
+      const result = db.prepare("INSERT INTO users (name, pass_hash, created_at) VALUES (?, ?, ?)").run(name.trim(), hashPassword(password), Date.now());
+      setCookie(req, res, createSession(db, Number(result.lastInsertRowid)), 30 * 86400);
+      res.status(201).json({ ok: true });
+    } catch (error) {
+      if (String(error.message).includes("UNIQUE")) return res.status(409).json({ error: "Ese nombre ya está en uso" });
+      throw error;
+    }
+  });
+
+  app.post("/api/login", (req, res) => {
+    if (!authLimit(`l:${req.ip}`)) return res.status(429).json({ error: "Demasiados intentos. Espera unos minutos." });
+    const { name, password } = req.body || {};
+    const user = typeof name === "string" ? db.prepare("SELECT * FROM users WHERE name = ?").get(name.trim()) : null;
+    if (!user || typeof password !== "string" || !verifyPassword(password, user.pass_hash)) return res.status(401).json({ error: "Nombre o contraseña incorrectos" });
+    setCookie(req, res, createSession(db, user.id), 30 * 86400);
+    res.json({ ok: true });
+  });
+
+  app.post("/api/logout", (req, res) => {
+    destroySession(db, parseCookies(req.get("cookie"))[COOKIE]);
+    setCookie(req, res, "", 0);
+    res.json({ ok: true });
+  });
+
+  app.get("/api/me", requireUser, (req, res) => res.json(profile(req.user, tzOf(req))));
+
+  app.post("/api/diagnostic", requireUser, (req, res) => {
+    const ids = new Set(diagnostic.map((d) => d.id));
+    const results = cleanResults(req.body?.results, (id) => ids.has(id));
+    if (!results || results.length < 8) return res.status(400).json({ error: "Resultados inválidos" });
+    const byLevel = new Map();
+    const bySkill = new Map();
+    for (const { id, ok } of results) {
+      const item = itemIndex.get(id);
+      const level = byLevel.get(item.lvl) || { ok: 0, n: 0 };
+      level.n += 1;
+      if (ok) level.ok += 1;
+      byLevel.set(item.lvl, level);
+      const skill = bySkill.get(item.skill) || { ok: 0, n: 0 };
+      skill.n += 1;
+      if (ok) skill.ok += 1;
+      bySkill.set(item.skill, skill);
+    }
+    let estimate = 1;
+    for (let lvl = 1; lvl <= 5; lvl += 1) {
+      const g = byLevel.get(lvl);
+      if (g && g.n >= 2 && g.ok / g.n >= 0.6) estimate = lvl;
+    }
+    const above = byLevel.get(estimate + 1);
+    if (above && above.n >= 2 && above.ok / above.n >= 0.4) estimate += 0.5;
+    const level = levelFromDifficulty(estimate);
+    const skills = Object.fromEntries([...bySkill].map(([k, v]) => [k, Math.round((v.ok / v.n) * 100)]));
+    db.prepare("UPDATE users SET level = ?, level_score = ?, skills = ? WHERE id = ?").run(level, estimate, JSON.stringify(skills), req.user.id);
+    recordResults(req.user.id, results, false);
+    if (!req.user.level) addXp(req.user.id, 20, tzOf(req));
+    res.json({ level, skills, startIndex: START_INDEX[level] });
+  });
+
+  app.post("/api/lesson", requireUser, (req, res) => {
+    const lesson = lessonIndex.get(req.body?.lessonId);
+    if (!lesson) return res.status(400).json({ error: "Lección desconocida" });
+    const offset = tzOf(req);
+    const current = profile(req.user, offset);
+    if (!isUnlocked(req.user, current.progress, lesson.id)) return res.status(403).json({ error: "Lección bloqueada" });
+    const allowed = new Set(lesson.exercises.map((e) => e.id));
+    const results = cleanResults(req.body?.results, (id) => allowed.has(id));
+    if (!results || results.length !== allowed.size) return res.status(400).json({ error: "Resultados inválidos" });
+    const correct = results.filter((r) => r.ok).length;
+    const score = Math.round((correct / results.length) * 100);
+    const previous = db.prepare("SELECT best FROM progress WHERE user_id = ? AND lesson_id = ?").get(req.user.id, lesson.id);
+    db.prepare(
+      "INSERT INTO progress (user_id, lesson_id, best) VALUES (?, ?, ?) ON CONFLICT(user_id, lesson_id) DO UPDATE SET best = MAX(best, excluded.best), plays = plays + 1",
+    ).run(req.user.id, lesson.id, score);
+    const base = 10 + correct * 2;
+    const xp = previous ? Math.round(base * 0.3) : base;
+    addXp(req.user.id, xp, offset);
+    recordResults(req.user.id, results, false);
+    res.json({ ...profile(req.user, offset), score, gained: xp, mastered: score >= MASTERY });
+  });
+
+  app.get("/api/review", requireUser, (req, res) => {
+    const rows = db.prepare("SELECT item_id FROM mistakes WHERE user_id = ? AND due_at <= ? ORDER BY due_at LIMIT 10").all(req.user.id, Date.now());
+    res.json({ ids: rows.map((r) => r.item_id) });
+  });
+
+  app.post("/api/review", requireUser, (req, res) => {
+    const results = cleanResults(req.body?.results, (id) => itemIndex.has(id));
+    if (!results || !results.length) return res.status(400).json({ error: "Resultados inválidos" });
+    recordResults(req.user.id, results, true);
+    const xp = results.filter((r) => r.ok).length * 2;
+    addXp(req.user.id, xp, tzOf(req));
+    res.json({ xp });
+  });
+
+  app.post("/api/lab", requireUser, (req, res) => {
+    const { kind } = req.body || {};
+    const xp = { speaking: 12, listening: 10 }[kind];
+    if (!xp) return res.status(400).json({ error: "Tipo inválido" });
+    addXp(req.user.id, xp, tzOf(req));
+    res.json({ xp });
+  });
+
+  app.post("/api/writing", requireUser, (req, res) => {
+    const { promptId, text, score } = req.body || {};
+    if (typeof promptId !== "string" || typeof text !== "string" || !text.trim() || text.length > 6000) return res.status(400).json({ error: "Texto inválido" });
+    const clean = Math.max(0, Math.min(100, Math.round(Number(score) || 0)));
+    const words = text.trim().split(/\s+/).length;
+    db.prepare("INSERT INTO writing_entries (user_id, prompt_id, words, score, text, created_at) VALUES (?, ?, ?, ?, ?, ?)").run(req.user.id, promptId.slice(0, 20), words, clean, text, Date.now());
+    addXp(req.user.id, 15, tzOf(req));
+    res.json({ xp: 15 });
+  });
+
+  app.get("/api/writing", requireUser, (req, res) => {
+    res.json({ entries: db.prepare("SELECT id, prompt_id AS promptId, words, score, text, created_at AS createdAt FROM writing_entries WHERE user_id = ? ORDER BY id DESC LIMIT 20").all(req.user.id) });
+  });
+
+  app.get("/api/leaderboard", requireUser, (req, res) => {
+    const since = localDay(tzOf(req), 6);
+    const rows = db
+      .prepare(
+        "SELECT u.id, u.name, u.level, COALESCE(SUM(a.xp), 0) AS xp FROM users u LEFT JOIN activity a ON a.user_id = u.id AND a.day >= ? GROUP BY u.id ORDER BY xp DESC, u.name LIMIT 50",
+      )
+      .all(since);
+    res.json({ rows: rows.map((r) => ({ name: r.name, level: r.level, xp: r.xp, you: r.id === req.user.id })) });
+  });
+
+  app.use("/api", (req, res) => res.status(404).json({ error: "No encontrado" }));
+
+  const dist = join(process.cwd(), distDir);
+  if (existsSync(dist)) {
+    app.use(express.static(dist, { setHeaders: (res, path) => { if (path.endsWith("sw.js")) res.set("Cache-Control", "no-cache"); } }));
+    app.get("*", (req, res) => res.sendFile(join(dist, "index.html")));
+  }
+
+  // eslint-disable-next-line no-unused-vars
+  app.use((error, req, res, next) => {
+    if (!production) console.error(error);
+    res.status(error.status === 400 ? 400 : 500).json({ error: "Error del servidor" });
+  });
+
+  return app;
+}

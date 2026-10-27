@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: nevergiveup
+    runtime: docker
+    plan: free
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: INVITE_CODE
+        sync: false
+      - key: DB_FILE
+        value: /data/upword.db
+    disk:
+      name: upword-data
+      mountPath: /data
+      sizeGB: 1

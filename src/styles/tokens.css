@@ -1,0 +1,28 @@
+:root {
+  --paper: #f2f4f6;
+  --surface: #fbfcfd;
+  --line: #d6dde5;
+  --ink: #122037;
+  --muted: #5a6a7d;
+  --signal: #d7f45b;
+  --signal-lip: #9ebf2d;
+  --correct: #1e8e5f;
+  --correct-lip: #146844;
+  --correct-soft: #ddf3e8;
+  --wrong: #c23b3b;
+  --wrong-lip: #8f2828;
+  --wrong-soft: #fbe3e1;
+  --xp: #e5f29b;
+  --xp-text: #2d3d1f;
+  --info: #2d6cc4;
+  --info-lip: #1f4e8b;
+
+  --font-display: "Bricolage Grotesque Variable", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Figtree Variable", "Segoe UI", system-ui, sans-serif;
+
+  --r-sm: 14px;
+  --r-lg: 20px;
+  --lip: 4px;
+  --tap: 48px;
+  --tabbar: 68px;
+}

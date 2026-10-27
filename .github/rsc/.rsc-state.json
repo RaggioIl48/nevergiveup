@@ -1,0 +1,244 @@
+{
+  "skills": {
+    "analyze": {
+      "files": [
+        "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.github\\rsc\\analyze"
+      ],
+      "base": "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.rsc\\skills\\analyze"
+    },
+    "automation-strategy": {
+      "files": [
+        "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.github\\rsc\\automation-strategy"
+      ],
+      "base": "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.rsc\\skills\\automation-strategy"
+    },
+    "clarify": {
+      "files": [
+        "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.github\\rsc\\clarify"
+      ],
+      "base": "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.rsc\\skills\\clarify"
+    },
+    "connect-tool": {
+      "files": [
+        "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.github\\rsc\\connect-tool"
+      ],
+      "base": "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.rsc\\skills\\connect-tool"
+    },
+    "constitution": {
+      "files": [
+        "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.github\\rsc\\constitution"
+      ],
+      "base": "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.rsc\\skills\\constitution"
+    },
+    "debug": {
+      "files": [
+        "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.github\\rsc\\debug"
+      ],
+      "base": "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.rsc\\skills\\debug"
+    },
+    "decision-challenge": {
+      "files": [
+        "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.github\\rsc\\decision-challenge"
+      ],
+      "base": "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.rsc\\skills\\decision-challenge"
+    },
+    "deprecation": {
+      "files": [
+        "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.github\\rsc\\deprecation"
+      ],
+      "base": "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.rsc\\skills\\deprecation"
+    },
+    "design": {
+      "files": [
+        "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.github\\rsc\\design"
+      ],
+      "base": "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.rsc\\skills\\design"
+    },
+    "fable-operator": {
+      "files": [
+        "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.github\\rsc\\fable-operator"
+      ],
+      "base": "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.rsc\\skills\\fable-operator"
+    },
+    "ftd": {
+      "files": [
+        "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.github\\rsc\\ftd"
+      ],
+      "base": "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.rsc\\skills\\ftd"
+    },
+    "harness": {
+      "files": [
+        "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.github\\rsc\\harness"
+      ],
+      "base": "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.rsc\\skills\\harness"
+    },
+    "idea-refinement": {
+      "files": [
+        "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.github\\rsc\\idea-refinement"
+      ],
+      "base": "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.rsc\\skills\\idea-refinement"
+    },
+    "implement": {
+      "files": [
+        "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.github\\rsc\\implement"
+      ],
+      "base": "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.rsc\\skills\\implement"
+    },
+    "init": {
+      "files": [
+        "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.github\\rsc\\init"
+      ],
+      "base": "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.rsc\\skills\\init"
+    },
+    "orient": {
+      "files": [
+        "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.github\\rsc\\orient"
+      ],
+      "base": "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.rsc\\skills\\orient"
+    },
+    "parallel": {
+      "files": [
+        "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.github\\rsc\\parallel"
+      ],
+      "base": "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.rsc\\skills\\parallel"
+    },
+    "plan": {
+      "files": [
+        "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.github\\rsc\\plan"
+      ],
+      "base": "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.rsc\\skills\\plan"
+    },
+    "review": {
+      "files": [
+        "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.github\\rsc\\review"
+      ],
+      "base": "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.rsc\\skills\\review"
+    },
+    "sdd": {
+      "files": [
+        "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.github\\rsc\\sdd"
+      ],
+      "base": "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.rsc\\skills\\sdd"
+    },
+    "sdd-init": {
+      "files": [
+        "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.github\\rsc\\sdd-init"
+      ],
+      "base": "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.rsc\\skills\\sdd-init"
+    },
+    "ship": {
+      "files": [
+        "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.github\\rsc\\ship"
+      ],
+      "base": "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.rsc\\skills\\ship"
+    },
+    "simplify-code": {
+      "files": [
+        "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.github\\rsc\\simplify-code"
+      ],
+      "base": "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.rsc\\skills\\simplify-code"
+    },
+    "source-grounded-development": {
+      "files": [
+        "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.github\\rsc\\source-grounded-development"
+      ],
+      "base": "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.rsc\\skills\\source-grounded-development"
+    },
+    "specify": {
+      "files": [
+        "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.github\\rsc\\specify"
+      ],
+      "base": "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.rsc\\skills\\specify"
+    },
+    "suggest": {
+      "files": [
+        "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.github\\rsc\\suggest"
+      ],
+      "base": "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.rsc\\skills\\suggest"
+    },
+    "tasks": {
+      "files": [
+        "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.github\\rsc\\tasks"
+      ],
+      "base": "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.rsc\\skills\\tasks"
+    },
+    "unslop": {
+      "files": [
+        "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.github\\rsc\\unslop"
+      ],
+      "base": "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.rsc\\skills\\unslop"
+    },
+    "ux": {
+      "files": [
+        "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.github\\rsc\\ux"
+      ],
+      "base": "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.rsc\\skills\\ux"
+    },
+    "verify": {
+      "files": [
+        "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.github\\rsc\\verify"
+      ],
+      "base": "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.rsc\\skills\\verify"
+    },
+    "worktrees": {
+      "files": [
+        "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.github\\rsc\\worktrees"
+      ],
+      "base": "C:\\Users\\Usuario Admin\\Documents\\Claude projects\\Plataforma de inglés\\.rsc\\skills\\worktrees"
+    }
+  },
+  "agents": [
+    "developer",
+    "finding-verifier",
+    "refuter-correctness",
+    "refuter-security",
+    "refuter-tests"
+  ],
+  "agentCollisions": [],
+  "agentsKept": [],
+  "explicitAgents": [],
+  "memory": {
+    "mode": "unsupported",
+    "reason": "no-local-lifecycle",
+    "paths": []
+  },
+  "update": {
+    "mode": "agent"
+  },
+  "knowledge": {
+    "mode": "unsupported",
+    "reason": null,
+    "paths": []
+  },
+  "gitPermissions": {
+    "mode": "unsupported",
+    "path": null
+  },
+  "policy": {
+    "baseAgents": true,
+    "alwaysOn": true,
+    "codeHooks": true,
+    "dangerGuard": true,
+    "laneGate": true,
+    "gitmojiGuard": false,
+    "memory": true,
+    "context7": false
+  },
+  "commands": [
+    "analyze",
+    "checkpoint",
+    "clarify",
+    "debug",
+    "harness-audit",
+    "implement",
+    "plan",
+    "refactor-clean",
+    "review",
+    "ship",
+    "specify",
+    "tasks",
+    "verify"
+  ],
+  "commandCollisions": [],
+  "version": "3.4.0"
+}

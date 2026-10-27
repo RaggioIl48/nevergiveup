@@ -1,0 +1,77 @@
+{
+  "title": "Dirección visual para Upword",
+  "question": "¿Qué sistema visual haría que la práctica diaria hacia B2 se sienta clara, adulta y digna de volver a usar en el celular?",
+  "options": [
+    {
+      "id": "b2-route-signal",
+      "kind": "assigned",
+      "label": "B2 Route Signal",
+      "thesis": "Una ruta de práctica seria convierte cada sesión corta, error y umbral de dominio en progreso visible hacia B2.",
+      "palette": "Carbón azulado para la estructura, blanco frío para lectura y lima eléctrica reservada para la siguiente acción y el progreso activo.",
+      "materials": "Superficies limpias, regla de ruta, nodos geométricos y tipografía sans de trabajo con cifras tabulares.",
+      "viewport": "Primero muestra la sesión recomendada de 12 minutos, nivel actual, avance de ruta, próximo hito y repaso pendiente; una barra inferior mantiene Ruta, Practicar, Grupo y Perfil.",
+      "risk": "La ruta podría recordar demasiado a una app de rachas; mantener el lenguaje adulto con foco en producción, dominio y repaso, no recompensas infantiles.",
+      "case": "Dirección asignada para equilibrar orientación, práctica B2, estados de dominio y lectura rápida en una pantalla móvil.",
+      "html": "C:/Users/Usuario Admin/Documents/Claude projects/Plataforma de inglés/.impeccable/mocks/decision/b2-route-signal.html",
+      "htmlFrame": "390x844"
+    },
+    {
+      "id": "variable-type-study",
+      "kind": "challenger",
+      "catalogId": "variable-font-specimen",
+      "verdict": "competitive",
+      "label": "Variable Type Study",
+      "thesis": "La tipografía que cambia de peso y ritmo expresa la precisión creciente de quien produce inglés B2.",
+      "palette": "Piedra gris, negro verdoso y teal concentrado para resaltar el progreso verbal.",
+      "materials": "Muestras tipográficas de gran escala, composición editorial asimétrica y subrayados de corrección.",
+      "viewport": "La frase en inglés de la sesión es el foco; diagnóstico, ruta y repaso aparecen como una lista editorial compacta.",
+      "risk": "La tipografía puede robar atención a ejercicios, progreso y repaso si domina más que el contenido.",
+      "case": "Identifica una herramienta adulta y hace visible el trabajo con el lenguaje, pero la muestra tipográfica no comunica por sí sola el siguiente ejercicio.",
+      "kept": "Usar contraste tipográfico para diferenciar consigna, respuesta y feedback.",
+      "raised": "Conservar lectura inmediata de práctica, avance de dominio y repaso pendiente en la primera pantalla.",
+      "html": "C:/Users/Usuario Admin/Documents/Claude projects/Plataforma de inglés/.impeccable/mocks/decision/variable-type-study.html",
+      "htmlFrame": "390x844"
+    },
+    {
+      "id": "annotated-study",
+      "kind": "challenger",
+      "catalogId": "rw-centre-rail-reference-setting",
+      "verdict": "competitive",
+      "label": "Annotated Study",
+      "thesis": "Una página de estudio anotada hace que cada sesión se sienta deliberada, con correcciones y recordatorios al margen.",
+      "palette": "Papel marfil, tinta verde-negra y ladrillo apagado solo para notas y progreso.",
+      "materials": "Jerarquía de cuaderno académico, filetes, anotaciones marginales y serif de lectura combinada con sans funcional.",
+      "viewport": "La recomendación de práctica lidera; el margen contiene tiempo y tipo de ejercicio; debajo aparecen ruta, dominio y errores para repasar.",
+      "risk": "El formato puede sentirse como una publicación para leer en vez de una herramienta interactiva para practicar.",
+      "case": "Aporta serenidad y contexto, aunque la página de referencia no deja suficientemente evidente el mecanismo de práctica y dominio.",
+      "kept": "Usar márgenes para explicaciones, correcciones y notas de repaso.",
+      "raised": "Hacer que cada llamada a la acción siga siendo obvia y cómoda de tocar.",
+      "html": "C:/Users/Usuario Admin/Documents/Claude projects/Plataforma de inglés/.impeccable/mocks/decision/annotated-study.html",
+      "htmlFrame": "390x844"
+    },
+    {
+      "id": "crouwel-grid",
+      "kind": "challenger",
+      "catalogId": "crouwel-grid-specimen",
+      "verdict": "competitive",
+      "label": "Grid Practice System",
+      "thesis": "Una grilla geométrica modular convierte el aprendizaje y las medidas de dominio en una interfaz precisa y legible.",
+      "palette": "Carbón oscuro, blanco mineral y naranja energético con lima para los estados activos.",
+      "materials": "Retícula visible, módulos cuadrados, numerales grandes y líneas finas de construcción.",
+      "viewport": "Una matriz resume nivel, dominio, racha y meta; una acción de práctica B2 va seguida de la ruta y los errores por recuperar.",
+      "risk": "La retícula puede sentirse como un instrumento técnico y endurecer demasiado una experiencia de aprendizaje.",
+      "case": "Aporta orden y escaneo rápido, aunque su muestra geométrica no explica directamente qué practicar después.",
+      "kept": "Usar alineación rigurosa y ritmo modular para leer el progreso móvil.",
+      "raised": "Priorizar consignas, práctica y siguiente acción por encima de la decoración geométrica.",
+      "html": "C:/Users/Usuario Admin/Documents/Claude projects/Plataforma de inglés/.impeccable/mocks/decision/crouwel-grid.html",
+      "htmlFrame": "390x844"
+    }
+  ],
+  "reroll": {
+    "registers": ["safer", "bolder"]
+  },
+  "buildPath": {
+    "value": "code",
+    "toggle": false
+  }
+}
