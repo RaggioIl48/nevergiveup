@@ -76,6 +76,7 @@ export async function practiceView(root, ctx) {
   const rows = [
     ["#/speaking", "MessageCircle", "Speaking", "TOEFL/IELTS-style prompts with prep time"],
     ["#/listening", "Headphones", "Listening", "Audio passages with comprehension questions"],
+    ["#/songs", "Music", "Songs", "Fill in the missing words of real songs"],
     ["#/writing", "PenLine", "Handwriting", "Write on paper or screen and get feedback"],
     ["#/review", "RotateCcw", "Review", me.dueCount ? `${me.dueCount} questions to review today` : "Your mistakes return here when it is time to review"],
   ];

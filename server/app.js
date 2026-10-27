@@ -5,6 +5,18 @@ import { timingSafeEqual } from "node:crypto";
 import { hashPassword, verifyPassword, createSession, userFromToken, destroySession, parseCookies, createRateLimiter } from "./auth.js";
 import { lessonIndex, lessonOrder, itemIndex, diagnostic, START_INDEX } from "../content/index.js";
 import { levelFromDifficulty } from "../content/grade.js";
+import { validateSong } from "../content/songs.js";
+
+async function youtubeTitle(videoId) {
+  try {
+    const res = await fetch(`https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(`https://www.youtube.com/watch?v=${videoId}`)}`, { signal: AbortSignal.timeout(3000) });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return typeof data.title === "string" ? data.title : null;
+  } catch {
+    return null;
+  }
+}
 
 const COOKIE = "upword_sid";
 const MASTERY = 80;
@@ -22,7 +34,7 @@ function localDay(offsetMin, shiftDays = 0) {
   return new Date(Date.now() - offsetMin * 60000 - shiftDays * DAY_MS).toISOString().slice(0, 10);
 }
 
-export function createApp(db, { inviteCode, production = false, distDir = "dist" } = {}) {
+export function createApp(db, { inviteCode, production = false, distDir = "dist", fetchTitle = youtubeTitle } = {}) {
   const app = express();
   app.disable("x-powered-by");
   app.set("trust proxy", 1);
@@ -30,7 +42,7 @@ export function createApp(db, { inviteCode, production = false, distDir = "dist"
     res.set({
       "X-Content-Type-Options": "nosniff",
       "Referrer-Policy": "same-origin",
-      "Content-Security-Policy": "default-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self' https://www.youtube.com; frame-src https://www.youtube-nocookie.com; img-src 'self' data: blob:; media-src 'self' blob:; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'",
     });
     next();
   });
@@ -236,7 +248,7 @@ export function createApp(db, { inviteCode, production = false, distDir = "dist"
 
   app.post("/api/lab", requireUser, (req, res) => {
     const { kind } = req.body || {};
-    const xp = { speaking: 12, listening: 10 }[kind];
+    const xp = { speaking: 12, listening: 10, song: 10 }[kind];
     if (!xp) return res.status(400).json({ error: "Invalid type" });
     addXp(req.user.id, xp, tzOf(req));
     res.json({ xp });
@@ -254,6 +266,37 @@ export function createApp(db, { inviteCode, production = false, distDir = "dist"
 
   app.get("/api/writing", requireUser, (req, res) => {
     res.json({ entries: db.prepare("SELECT id, prompt_id AS promptId, words, score, text, created_at AS createdAt FROM writing_entries WHERE user_id = ? ORDER BY id DESC LIMIT 20").all(req.user.id) });
+  });
+
+  app.get("/api/songs", requireUser, (req, res) => {
+    const rows = db.prepare("SELECT s.id, s.video_id AS videoId, s.title, s.level, s.user_id AS owner, u.name AS addedBy FROM songs s JOIN users u ON u.id = s.user_id ORDER BY s.id DESC LIMIT 100").all();
+    res.json({ songs: rows.map(({ owner, ...s }) => ({ ...s, mine: owner === req.user.id })) });
+  });
+
+  app.get("/api/songs/:id", requireUser, (req, res) => {
+    const row = db.prepare("SELECT s.id, s.video_id AS videoId, s.title, s.level, s.lyrics, s.user_id AS owner, u.name AS addedBy FROM songs s JOIN users u ON u.id = s.user_id WHERE s.id = ?").get(Number(req.params.id));
+    if (!row) return res.status(404).json({ error: "Song not found" });
+    const { owner, ...song } = row;
+    res.json({ song: { ...song, mine: owner === req.user.id } });
+  });
+
+  app.post("/api/songs", requireUser, async (req, res) => {
+    const song = validateSong(req.body || {});
+    if (song.error) return res.status(400).json({ error: song.error });
+    try {
+      const title = song.title || (await fetchTitle(song.videoId)) || "Untitled song";
+      const info = db.prepare("INSERT INTO songs (user_id, video_id, title, level, lyrics, created_at) VALUES (?, ?, ?, ?, ?, ?)").run(req.user.id, song.videoId, title.slice(0, 80), song.level, song.lyrics, Date.now());
+      res.json({ id: Number(info.lastInsertRowid) });
+    } catch (error) {
+      if (!production) console.error(error);
+      res.status(500).json({ error: "Server error" });
+    }
+  });
+
+  app.post("/api/songs/:id/delete", requireUser, (req, res) => {
+    const info = db.prepare("DELETE FROM songs WHERE id = ? AND user_id = ?").run(Number(req.params.id), req.user.id);
+    if (!info.changes) return res.status(404).json({ error: "Song not found" });
+    res.json({ ok: true });
   });
 
   app.get("/api/leaderboard", requireUser, (req, res) => {

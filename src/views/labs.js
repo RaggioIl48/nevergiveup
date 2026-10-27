@@ -5,6 +5,8 @@ import { speak, stopSpeaking, listen, canListen } from "../audio.js";
 import { speakingPrompts, rubric, writingPrompts } from "../../content/labs.js";
 import { realListening, audioCredits } from "../../content/real-listening.js";
 import { evaluateWriting } from "../writing-eval.js";
+import { buildGaps, isCorrect, DENSITY } from "../../content/songs.js";
+import { loadYouTube } from "../youtube.js";
 
 const pick = (list, avoid) => {
   const pool = list.filter((x) => x.id !== avoid);
@@ -113,6 +115,142 @@ export async function listeningView(root, ctx) {
       h("p", { class: "muted" }, audioCredits));
   };
   render();
+}
+
+export async function songsView(root, ctx) {
+  const { songs } = await api("/songs");
+  labFrame(root, ctx, "Songs",
+    h("p", { class: "tip" }, "Listen to a real song and fill in the missing words. Pick the video, paste the lyrics, and the blanks are made for you."),
+    h("a", { class: "key key-primary wide", href: "#/song-add" }, "Add a song"),
+    songs.length
+      ? h("ul", { class: "rows" }, songs.map((s) => h("li", {}, h("a", { class: "row", href: `#/song/${s.id}` },
+        h("span", { class: "row-icon" }, icon("Headphones", 28)),
+        h("span", { class: "row-text" }, h("b", {}, s.title), h("small", {}, `${s.level} · added by ${s.addedBy}`)),
+        icon("ChevronRight", 22)))))
+      : h("p", { class: "muted" }, "No songs yet. Add the first one!"));
+}
+
+export async function songAddView(root, ctx) {
+  const url = h("input", { class: "answer-input", type: "url", inputmode: "url", autocapitalize: "none", autocorrect: "off", placeholder: "https://www.youtube.com/watch?v=…", "aria-label": "YouTube link" });
+  const title = h("input", { class: "answer-input", type: "text", maxlength: "80", placeholder: "Leave empty to use the video title", "aria-label": "Title (optional)" });
+  const lyrics = h("textarea", { class: "answer-input", rows: "10", placeholder: "Paste the lyrics here, one line per row.\nTip: put {braces} around a word to force it to be a blank.", "aria-label": "Lyrics" });
+  let level = "B1";
+  const chips = ["A2", "B1", "B2"].map((l) => h("button", { class: "tag chip-btn", type: "button", "aria-pressed": String(l === level), onClick: () => {
+    level = l; chips.forEach((c) => c.setAttribute("aria-pressed", String(c.textContent === l)));
+  } }, l));
+  const error = h("p", { class: "form-error", hidden: true, role: "alert" });
+  const save = h("button", { class: "key key-primary wide", type: "button", onClick: async () => {
+    error.hidden = true;
+    save.disabled = true;
+    try {
+      const res = await api("/songs", { url: url.value, title: title.value, level, lyrics: lyrics.value });
+      ctx.go(`#/song/${res.id}`);
+    } catch (e) {
+      error.textContent = e.message;
+      error.hidden = false;
+      save.disabled = false;
+    }
+  } }, "Save song");
+  labFrame(root, ctx, "Add a song",
+    h("label", { class: "field-label" }, "YouTube link"), url,
+    h("label", { class: "field-label" }, "Title (optional)"), title,
+    h("fieldset", { class: "q" }, h("legend", {}, "How hard is the singing?"), h("div", { class: "tags" }, chips)),
+    h("label", { class: "field-label" }, "Lyrics"), lyrics,
+    h("p", { class: "muted" }, "Lyrics stay on this server and are only visible to signed-in members. Only add what your group may use."),
+    error, save);
+}
+
+export async function songView(root, ctx, id) {
+  const { song } = await api(`/songs/${encodeURIComponent(id)}`);
+  let density = "medium";
+  let player = null;
+  let checked = false;
+  let rewarded = false;
+  const cleanup = () => { try { player?.destroy(); } catch { /* player already gone */ } player = null; };
+  window.addEventListener("hashchange", cleanup, { once: true });
+
+  const stage = h("div", { class: "yt-frame" }, h("div", { id: "yt-target" }));
+  const fallback = h("p", { class: "muted", hidden: true }, "This video cannot be played here. ", h("a", { class: "link", href: `https://www.youtube.com/watch?v=${song.videoId}`, target: "_blank", rel: "noopener" }, "Open it on YouTube"));
+  const speeds = [1, 0.75, 0.5];
+  let speedIndex = 0;
+  const speedBtn = h("button", { class: "key key-quiet", type: "button", "aria-label": "Playback speed", onClick: () => {
+    speedIndex = (speedIndex + 1) % speeds.length;
+    player?.setPlaybackRate?.(speeds[speedIndex]);
+    speedBtn.textContent = `${speeds[speedIndex]}×`;
+  } }, "1×");
+  const back = h("button", { class: "key key-quiet", type: "button", "aria-label": "Back 5 seconds", onClick: () => player?.seekTo?.(Math.max(0, (player.getCurrentTime?.() || 0) - 5), true) }, icon("RotateCcw", 20), "5s");
+  const toggle = h("button", { class: "key key-info", type: "button", onClick: () => {
+    if (!player?.getPlayerState) return;
+    if (player.getPlayerState() === 1) player.pauseVideo(); else player.playVideo();
+  } }, icon("Play", 22), "Play / pause");
+
+  const lyricsBox = h("div", { class: "lyrics" });
+  const score = h("p", { class: "muted", "aria-live": "polite" });
+  let inputs = [];
+
+  const renderLyrics = () => {
+    checked = false;
+    inputs = [];
+    score.textContent = "";
+    lyricsBox.replaceChildren(...buildGaps(song.lyrics, DENSITY[density]).map((line) => {
+      if (line.blank) return h("div", { class: "lyric-gap-line" });
+      if (line.label) return h("p", { class: "lyric-label" }, line.label);
+      return h("p", { class: "lyric-line" }, line.tokens.map((t) => {
+        if (!t.gap) return h("span", {}, `${t.pre}${t.word}${t.post} `);
+        const input = h("input", { class: "gap", type: "text", autocapitalize: "none", autocorrect: "off", autocomplete: "off", spellcheck: "false", size: String(Math.max(3, t.word.length)), "aria-label": "Missing word" });
+        inputs.push({ input, answer: t.word });
+        return [t.pre, input, `${t.post} `];
+      }));
+    }));
+  };
+
+  const check = h("button", { class: "key key-primary wide", type: "button", onClick: async () => {
+    if (!inputs.length) return;
+    checked = true;
+    let right = 0;
+    for (const { input, answer } of inputs) {
+      const ok = isCorrect(answer, input.value);
+      if (ok) right += 1;
+      input.classList.toggle("ok", ok);
+      input.classList.toggle("bad", !ok);
+      input.title = ok ? "" : answer;
+    }
+    score.textContent = `${right}/${inputs.length} correct. Red blanks: tap "Show answers" or listen again.`;
+    if (!rewarded && right / inputs.length >= 0.5) {
+      rewarded = true;
+      try { const res = await api("/lab", { kind: "song", ref: String(song.id) }); toast(`+${res.xp} XP`); } catch { /* no XP */ }
+    }
+  } }, "Check");
+  const reveal = h("button", { class: "key key-quiet", type: "button", onClick: () => {
+    if (!checked) return toast("Check your answers first.");
+    for (const { input, answer } of inputs) if (input.classList.contains("bad")) { input.value = answer; input.classList.replace("bad", "ok"); }
+  } }, "Show answers");
+  const retry = h("button", { class: "key key-quiet", type: "button", onClick: renderLyrics }, "Clear");
+
+  const levels = Object.keys(DENSITY).map((key) => h("label", {}, h("input", { type: "radio", name: "density", value: key, checked: key === density, onChange: () => { density = key; renderLyrics(); } }), h("span", {}, key[0].toUpperCase() + key.slice(1))));
+  const remove = song.mine ? h("button", { class: "link", type: "button", onClick: async () => {
+    if (!confirm("Delete this song for everyone?")) return;
+    try { await api(`/songs/${song.id}/delete`, {}); cleanup(); ctx.go("#/songs"); } catch (e) { toast(e.message); }
+  } }, "Delete this song") : null;
+
+  renderLyrics();
+  labFrame(root, ctx, song.title, stage, fallback,
+    h("div", { class: "audio-row" }, toggle, back, speedBtn),
+    h("p", { class: "muted" }, `${song.level} · added by ${song.addedBy}. Song lyrics can be hard to hear, and they are not always correct English.`),
+    h("fieldset", { class: "rubric" }, h("legend", {}, "Blanks"), h("div", { class: "rate" }, levels)),
+    lyricsBox, score,
+    h("div", { class: "audio-row" }, check, reveal, retry), remove);
+
+  try {
+    const YT = await loadYouTube();
+    player = new YT.Player("yt-target", {
+      videoId: song.videoId, host: "https://www.youtube-nocookie.com",
+      playerVars: { playsinline: 1, rel: 0, modestbranding: 1, origin: location.origin },
+      events: { onError: () => { fallback.hidden = false; } },
+    });
+  } catch {
+    fallback.hidden = false;
+  }
 }
 
 export async function writingView(root, ctx) {

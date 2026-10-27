@@ -9,7 +9,7 @@ import { icon } from "./icons.js";
 import { authView } from "./views/auth.js";
 import { homeView, practiceView, rankView, meView } from "./views/tabs.js";
 import { lessonView, diagnosticView, reviewView } from "./views/flows.js";
-import { speakingView, listeningView, writingView } from "./views/labs.js";
+import { speakingView, listeningView, writingView, songsView, songAddView, songView } from "./views/labs.js";
 import { stopSpeaking } from "./audio.js";
 
 const root = document.getElementById("app");
@@ -51,7 +51,7 @@ async function route() {
     return TAB_VIEWS[hash](body, ctx).catch?.((e) => toast(e.message));
   }
   const [, name, arg] = hash.split("/");
-  const full = { lesson: () => lessonView(root, ctx, arg), diagnostic: () => diagnosticView(root, ctx), review: () => reviewView(root, ctx), speaking: () => speakingView(root, ctx), listening: () => listeningView(root, ctx), writing: () => writingView(root, ctx) };
+  const full = { lesson: () => lessonView(root, ctx, arg), diagnostic: () => diagnosticView(root, ctx), review: () => reviewView(root, ctx), speaking: () => speakingView(root, ctx), listening: () => listeningView(root, ctx), writing: () => writingView(root, ctx), songs: () => songsView(root, ctx), "song-add": () => songAddView(root, ctx), song: () => songView(root, ctx, arg) };
   if (full[name]) {
     try { await full[name](); } catch (e) { toast(e.message); ctx.go("#/home"); }
     return;

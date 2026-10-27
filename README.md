@@ -68,3 +68,8 @@ Deploy directo con este repositorio:
 ## Herramientas del proyecto
 
 rsc-harness (`.github/`, `02-DOCS/`), REA (`.vscode/mcp.json`) e Impeccable (`PRODUCT.md`, `DESIGN.md`, skills en `.github/`).
+
+## Songs (listen and fill)
+
+Practice > Songs: a member pastes a YouTube link and the lyrics; blanks are generated automatically (Easy/Medium/Hard) or forced with {braces}. Songs and lyrics are stored only in the private database, never in the repo. The video plays through the YouTube embed (no time sync). Only add lyrics your group may use.
+
