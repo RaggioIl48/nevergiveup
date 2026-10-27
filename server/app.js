@@ -270,6 +270,28 @@ export function createApp(db, { inviteCode, production = false, distDir = "dist"
     }
   });
 
+  app.post("/api/writing/feedback", requireUser, async (req, res) => {
+    if (!coach.available() || !coach.reviewWriting) return res.json({ available: false });
+    const { prompt, text, min } = req.body || {};
+    if (typeof prompt !== "string" || typeof text !== "string") return res.status(400).json({ error: "Invalid request" });
+    const body = text.trim().slice(0, 3000);
+    const words = body.split(/\s+/).length;
+    if (words < 15) return res.status(400).json({ error: "Write a little more so there is something to review" });
+    const day = new Date().toISOString().slice(0, 10);
+    const key = `w:${req.user.id}:${day}`;
+    const used = coachUse.get(key) || 0;
+    if (used >= 20) return res.status(429).json({ error: "Daily AI feedback limit reached. Try again tomorrow." });
+    coachUse.set(key, used + 1);
+    try {
+      const feedback = await coach.reviewWriting({ prompt: prompt.slice(0, 600), text: body, words, min: Math.max(0, Math.min(500, Math.round(Number(min) || 0))) });
+      res.json({ available: true, feedback });
+    } catch (error) {
+      coachUse.set(key, used);
+      if (!production) console.error(error);
+      res.json({ available: false });
+    }
+  });
+
   app.post("/api/lab", requireUser, (req, res) => {
     const { kind } = req.body || {};
     const xp = { speaking: 12, listening: 10, song: 10, exam: 30 }[kind];

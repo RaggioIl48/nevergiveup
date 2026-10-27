@@ -1,4 +1,4 @@
-﻿import { api } from "../api.js";
+import { api } from "../api.js";
 import { h, mount, toast } from "../dom.js";
 import { icon } from "../icons.js";
 import { speak, stopSpeaking, listen, canListen } from "../audio.js";
@@ -36,7 +36,7 @@ export async function speakingView(root, ctx) {
     const clockEl = h("p", { class: "timer", "aria-live": "off" }, clock(prompt.prep));
     const transcript = h("textarea", { class: "answer-input", rows: "5", placeholder: canListen ? "Your transcript will appear here as you speak" : "Your browser cannot transcribe speech. Speak aloud and jot down ideas here.", "aria-label": "Transcript" });
     const main = h("button", { class: "key key-primary wide", type: "button" }, "Start prep");
-    const info = h("p", { class: "muted", "aria-live": "polite" }, `Prep: ${prompt.prep}s Â· Response: ${prompt.time}s`);
+    const info = h("p", { class: "muted", "aria-live": "polite" }, `Prep: ${prompt.prep}s · Response: ${prompt.time}s`);
     const rubricBox = h("div", { class: "rubric", hidden: true });
     const again = h("button", { class: "link", type: "button", hidden: true, onClick: () => { again.hidden = true; finish(); } }, "Review again");
 
@@ -129,13 +129,13 @@ export async function songsView(root, ctx) {
     songs.length
       ? h("ul", { class: "rows" }, songs.map((s) => h("li", {}, h("a", { class: "row", href: `#/song/${s.id}` },
         h("span", { class: "row-icon" }, icon("Headphones", 28)),
-        h("span", { class: "row-text" }, h("b", {}, s.title), h("small", {}, `${s.level} Â· added by ${s.addedBy}`)),
+        h("span", { class: "row-text" }, h("b", {}, s.title), h("small", {}, `${s.level} · added by ${s.addedBy}`)),
         icon("ChevronRight", 22)))))
       : h("p", { class: "muted" }, "No songs yet. Add the first one!"));
 }
 
 export async function songAddView(root, ctx) {
-  const url = h("input", { class: "answer-input", type: "url", inputmode: "url", autocapitalize: "none", autocorrect: "off", placeholder: "https://www.youtube.com/watch?v=â€¦", "aria-label": "YouTube link" });
+  const url = h("input", { class: "answer-input", type: "url", inputmode: "url", autocapitalize: "none", autocorrect: "off", placeholder: "https://www.youtube.com/watch?v=…", "aria-label": "YouTube link" });
   const title = h("input", { class: "answer-input", type: "text", maxlength: "80", placeholder: "Leave empty to use the video title", "aria-label": "Title (optional)" });
   const lyrics = h("textarea", { class: "answer-input", rows: "10", placeholder: "Paste the lyrics here, one line per row.\nTip: put {braces} around a word to force it to be a blank.", "aria-label": "Lyrics" });
   let level = "B1";
@@ -180,8 +180,8 @@ export async function songView(root, ctx, id) {
   const speedBtn = h("button", { class: "key key-quiet", type: "button", "aria-label": "Playback speed", onClick: () => {
     speedIndex = (speedIndex + 1) % speeds.length;
     player?.setPlaybackRate?.(speeds[speedIndex]);
-    speedBtn.textContent = `${speeds[speedIndex]}Ã—`;
-  } }, "1Ã—");
+    speedBtn.textContent = `${speeds[speedIndex]}×`;
+  } }, "1×");
   const back = h("button", { class: "key key-quiet", type: "button", "aria-label": "Back 5 seconds", onClick: () => player?.seekTo?.(Math.max(0, (player.getCurrentTime?.() || 0) - 5), true) }, icon("RotateCcw", 20), "5s");
   const toggle = h("button", { class: "key key-info", type: "button", onClick: () => {
     if (!player?.getPlayerState) return;
@@ -240,7 +240,7 @@ export async function songView(root, ctx, id) {
   renderLyrics();
   labFrame(root, ctx, song.title, stage, fallback,
     h("div", { class: "audio-row" }, toggle, back, speedBtn),
-    h("p", { class: "muted" }, `${song.level} Â· added by ${song.addedBy}. Song lyrics can be hard to hear, and they are not always correct English.`),
+    h("p", { class: "muted" }, `${song.level} · added by ${song.addedBy}. Song lyrics can be hard to hear, and they are not always correct English.`),
     h("fieldset", { class: "rubric" }, h("legend", {}, "Blanks"), h("div", { class: "rate" }, levels)),
     lyricsBox, score,
     h("div", { class: "audio-row" }, check, reveal, retry), remove);
@@ -270,18 +270,42 @@ export async function writingView(root, ctx) {
     canvas.addEventListener("pointermove", (e) => { if (drawing) { g.lineTo(...at(e)); g.stroke(); } });
     for (const t of ["pointerup", "pointercancel"]) canvas.addEventListener(t, () => { drawing = false; });
     const text = h("textarea", { class: "answer-input", rows: "8", placeholder: "Transcribe your handwritten text here", "aria-label": "Text transcription" });
-    const count = h("p", { class: "muted", "aria-live": "polite" }, `0 words Â· minimum ${prompt.min}`);
-    text.addEventListener("input", () => { const n = text.value.trim() ? text.value.trim().split(/\s+/).length : 0; count.textContent = `${n} words Â· minimum ${prompt.min}`; });
+    const count = h("p", { class: "muted", "aria-live": "polite" }, `0 words · minimum ${prompt.min}`);
+    text.addEventListener("input", () => { const n = text.value.trim() ? text.value.trim().split(/\s+/).length : 0; count.textContent = `${n} words · minimum ${prompt.min}`; });
     const feedback = h("div", { class: "feedback-card", hidden: true });
     const photo = h("img", { class: "photo", alt: "Photo of your text", hidden: true });
     const file = h("input", { type: "file", accept: "image/*", capture: "environment", class: "sr", id: "photo", onChange: () => { const f = file.files?.[0]; if (f) { photo.src = URL.createObjectURL(f); photo.hidden = false; } } });
     const check = h("button", { class: "key key-primary wide", type: "button", onClick: async () => {
       const value = text.value.trim();
       if (!value) return toast("Transcribe your text to review it.");
-      const res = evaluateWriting(value);
+      check.disabled = true;
       feedback.hidden = false;
-      feedback.replaceChildren(h("h2", {}, `Practice score: ${res.score}/100`), h("p", { class: "muted" }, "A rough guide based on simple checks of your transcription, not an official score."), h("ul", {}, res.notes.map((n) => h("li", {}, n))));
-      try { await api("/writing", { promptId: prompt.id, text: value, score: res.score }); toast("+15 XP"); } catch (e) { toast(e.message); }
+      feedback.replaceChildren(h("p", { class: "muted", "aria-live": "polite" }, "Reviewing your text…"));
+      let score;
+      let ai = null;
+      try {
+        const r = await api("/writing/feedback", { prompt: prompt.q, text: value, min: prompt.min });
+        if (r.available) ai = r.feedback;
+      } catch (e) { toast(e.message); }
+      if (ai) {
+        score = Math.round((ai.overall / 4) * 100);
+        const label = { task: "Task and ideas", organisation: "Organisation", vocabulary: "Vocabulary", grammar: "Grammar" };
+        feedback.replaceChildren(
+          h("h2", {}, `Estimated level: ${ai.level}`),
+          h("p", { class: "score-big" }, `${ai.overall} / 4`),
+          ...Object.entries(ai.scores).map(([k, v]) => h("div", { class: "meter" }, h("span", {}, `${label[k]}: ${v}/4`), h("progress", { max: "4", value: String(v) }))),
+          ai.strengths.length ? h("div", {}, h("h3", {}, "What worked"), h("ul", { class: "notes" }, ai.strengths.map((s) => h("li", {}, s)))) : "",
+          ai.fixes.length ? h("div", {}, h("h3", {}, "What to fix"), h("ul", { class: "fixes" }, ai.fixes.map((f) => h("li", {},
+            h("span", { class: "fix-said" }, `“${f.said}”`), h("span", { class: "fix-better" }, f.better), h("small", {}, f.why))))) : "",
+          ai.tip ? h("p", { class: "tip-box" }, h("b", {}, "Next time: "), ai.tip) : "",
+          h("p", { class: "muted" }, "Reviewed by an AI coach. It is a study guide, not an official score."));
+      } else {
+        const res = evaluateWriting(value);
+        score = res.score;
+        feedback.replaceChildren(h("h2", {}, `Practice score: ${res.score}/100`), h("p", { class: "muted" }, "A rough guide from simple checks (AI coach unavailable), not an official score."), h("ul", {}, res.notes.map((n) => h("li", {}, n))));
+      }
+      try { await api("/writing", { promptId: prompt.id, text: value, score }); toast("+15 XP"); } catch (e) { toast(e.message); }
+      check.disabled = false;
     } }, "Review and save");
     const inks = [["#1B2340", "Ink"], ["#2D6CC4", "Blue"], ["#C23B3B", "Red"]].map(([c, label]) =>
       h("button", { class: "swatch", type: "button", style: `--ink:${c}`, "aria-label": label, "aria-pressed": String(c === ink), onClick: (e) => { ink = c; inks.forEach((b) => b.setAttribute("aria-pressed", "false")); e.currentTarget.setAttribute("aria-pressed", "true"); } }));
