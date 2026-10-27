@@ -14,7 +14,7 @@ export function runPlayer({ root, source, quiet = false, onExit, onFinish }) {
   const track = h("div", { class: "progress-track", role: "progressbar", "aria-valuemin": "0", "aria-valuemax": "100" }, bar);
   const stage = h("div", { class: "stage" });
   const action = h("div", { class: "action-bar" });
-  const close = h("button", { class: "icon-btn", type: "button", "aria-label": "Salir de la lección", onClick: () => { stopSpeaking(); onExit(); } }, icon("X", 24));
+  const close = h("button", { class: "icon-btn", type: "button", "aria-label": "Exit lesson", onClick: () => { stopSpeaking(); onExit(); } }, icon("X", 24));
   root.replaceChildren(h("div", { class: "player" }, h("header", { class: "player-top" }, close, track), stage, action));
 
   const setProgress = () => {
@@ -26,7 +26,7 @@ export function runPlayer({ root, source, quiet = false, onExit, onFinish }) {
   const show = (ex) => {
     current = ex;
     checked = false;
-    const checkBtn = h("button", { class: "key key-primary wide", type: "button", disabled: true, onClick: check }, quiet ? "Continuar" : "Comprobar");
+    const checkBtn = h("button", { class: "key key-primary wide", type: "button", disabled: true, onClick: check }, quiet ? "Continue" : "Check");
     action.className = "action-bar";
     action.replaceChildren(checkBtn);
     view = renderExercise(ex, (ready) => { checkBtn.disabled = !ready; });
@@ -58,10 +58,10 @@ export function runPlayer({ root, source, quiet = false, onExit, onFinish }) {
     const answer = ok ? null : correctText(current);
     action.className = `action-bar feedback ${ok ? "good" : "bad"}`;
     action.replaceChildren(...[
-      h("div", { class: "feedback-head" }, icon(ok ? "Check" : "X", 28), h("strong", {}, ok ? "Correcto" : "Casi")),
-      answer ? h("p", { class: "feedback-answer" }, "Respuesta: ", h("b", {}, answer)) : null,
+      h("div", { class: "feedback-head" }, icon(ok ? "Check" : "X", 28), h("strong", {}, ok ? "Correct" : "Almost")),
+      answer ? h("p", { class: "feedback-answer" }, "Answer: ", h("b", {}, answer)) : null,
       current.why ? h("p", { class: "feedback-why" }, current.why) : null,
-      h("button", { class: "key wide " + (ok ? "key-good" : "key-bad"), type: "button", autofocus: true, onClick: () => advance(ok) }, "Continuar"),
+      h("button", { class: "key wide " + (ok ? "key-good" : "key-bad"), type: "button", autofocus: true, onClick: () => advance(ok) }, "Continue"),
     ].filter(Boolean));
     action.querySelector("button").focus();
   };

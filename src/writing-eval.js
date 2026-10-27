@@ -21,37 +21,37 @@ function scoreWriting(text, words, sentences, found) {
   }
 
   function lengthScore() {
-    if (words.length >= 100) { notes.push("La extensión alcanza la meta orientativa de 100 palabras."); return 20; }
-    notes.push(`Tienes ${words.length} palabras; añade ideas y ejemplos para llegar a 100.`);
+    if (words.length >= 100) { notes.push("You reached the suggested 100-word goal."); return 20; }
+    notes.push(`You have ${words.length} words; add ideas and examples to reach 100.`);
     return Math.round((words.length / 100) * 10);
   }
 
   function connectorScore() {
-    if (found.length) { notes.push(`Buen uso de conectores: ${found.slice(0, 3).join(", ")}.`); return Math.min(20, found.length * 7); }
-    notes.push("Conecta tus razones con “because”, “however” o “for example”.");
+    if (found.length) { notes.push(`Good use of linking words: ${found.slice(0, 3).join(", ")}.`); return Math.min(20, found.length * 7); }
+    notes.push("Link your ideas with “because,” “however,” or “for example.”");
     return 0;
   }
 
   function grammarScore() {
     const checks = [
-      [/\bpeople is\b/i, "“people” va con “are”."],
-      [/\bdepend of\b/i, "Se dice “depend on”."],
-      [/\binformations\b/i, "“information” es incontable, sin -s."],
-      [/\badvices\b/i, "“advice” es incontable: “some advice”."],
-      [/\bdespite of\b/i, "Usa “despite” sin “of”, o “in spite of”."],
-      [/\b(he|she|it) (go|have|do|don't)\b/i, "Con he/she/it, el verbo lleva -s (goes, has, does, doesn't)."],
-      [/\bi am agree\b/i, "Di “I agree”."],
-      [/\bmore better\b/i, "Evita el doble comparativo: “better”."],
+      [/\bpeople is\b/i, "Use “are” with “people.”"],
+      [/\bdepend of\b/i, "Say “depend on.”"],
+      [/\binformations\b/i, "“Information” is uncountable; do not add -s."],
+      [/\badvices\b/i, "“Advice” is uncountable: say “some advice.”"],
+      [/\bdespite of\b/i, "Use “despite” without “of,” or say “in spite of.”"],
+      [/\b(he|she|it) (go|have|do|don't)\b/i, "With he/she/it, add -s to the verb (goes, has, does, doesn't)."],
+      [/\bi am agree\b/i, "Say “I agree.”"],
+      [/\bmore better\b/i, "Avoid double comparatives: use “better.”"],
     ];
     const hits = checks.filter(([pattern]) => pattern.test(text)).map(([, note]) => note);
     if (hits.length) { notes.push(...hits.slice(0, 3)); return Math.max(0, 15 - hits.length * 5); }
-    notes.push("No detecté errores frecuentes. Lee en voz alta para comprobar que suena natural.");
+    notes.push("No common errors found. Read it aloud to check that it sounds natural.");
     return 15;
   }
 
   function punctuationScore() {
     const ok = sentences.length >= 3 && sentences.every((s) => /^[A-Z]/.test(s)) && /[.!?]["')\]]?\s*$/.test(text);
-    notes.push(ok ? "Mayúsculas y puntuación claras." : "Revisa las mayúsculas al inicio y la puntuación al final de las frases.");
+    notes.push(ok ? "Clear capitalization and punctuation." : "Check capitalization at the start and punctuation at the end of each sentence.");
     return ok ? 10 : 0;
   }
 }

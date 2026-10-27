@@ -4,7 +4,7 @@ import { createApp } from "./app.js";
 const production = process.env.NODE_ENV === "production";
 const inviteCode = process.env.INVITE_CODE || (production ? "" : "upword");
 if (!inviteCode) {
-  console.error("Falta la variable INVITE_CODE (código para que tus amigos se registren).");
+  console.error("Missing INVITE_CODE variable (the code your friends use to sign up).");
   process.exit(1);
 }
 

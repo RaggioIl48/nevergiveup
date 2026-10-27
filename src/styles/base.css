@@ -17,7 +17,7 @@ body, button, a, label { -webkit-touch-callout: none; }
 button, .key, .choice, .node, .row, .tab { touch-action: manipulation; user-select: none; }
 input, textarea { font-size: 16px; }
 
-::selection { background: #f4c8b8; color: var(--ink); }
+::selection { background: #d7e3f4; color: var(--ink); }
 :focus-visible { outline: 3px solid var(--info); outline-offset: 2px; border-radius: 6px; }
 input, textarea { caret-color: var(--signal); }
 

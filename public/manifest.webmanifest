@@ -1,8 +1,8 @@
 {
   "name": "Upword",
   "short_name": "Upword",
-  "description": "Inglés de B1 a B2",
-  "lang": "es",
+  "description": "Practice English from B1 to B2",
+  "lang": "en",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#f2f4f6",

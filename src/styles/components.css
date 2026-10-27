@@ -25,7 +25,7 @@
   transition: transform 80ms ease, box-shadow 80ms ease;
 }
 .key:active:not(:disabled) { transform: translateY(var(--lip)); box-shadow: 0 0 0 transparent; }
-.key:disabled { background: var(--line); color: #7a7f95; box-shadow: 0 var(--lip) 0 #cfc5ae; cursor: not-allowed; }
+.key:disabled { background: var(--line); color: #7a7f95; box-shadow: 0 var(--lip) 0 #c3cad3; cursor: not-allowed; }
 .key.wide { width: 100%; min-height: 54px; }
 .key-primary { background: var(--signal); color: var(--ink); box-shadow: 0 var(--lip) 0 var(--signal-lip); }
 .key-good { background: var(--correct); box-shadow: 0 var(--lip) 0 var(--correct-lip); }
@@ -101,7 +101,7 @@
 }
 .node.open:active { transform: translateY(3px); box-shadow: 0 0 0 transparent; }
 .node.done { background: var(--correct); box-shadow: 0 6px 0 var(--correct-lip); }
-.node.locked { background: var(--line); color: #7a7f95; box-shadow: 0 6px 0 #cfc5ae; }
+.node.locked { background: var(--line); color: #7a7f95; box-shadow: 0 6px 0 #c3cad3; }
 .node-title { font-weight: 700; grid-column: 2; }
 .node-best { font-size: 0.875rem; color: var(--correct-lip); font-weight: 700; }
 
@@ -193,7 +193,7 @@
 .rate input:focus-visible + span { outline: 3px solid var(--info); outline-offset: 2px; }
 .transcript { display: flex; flex-direction: column; gap: 10px; padding-top: 10px; }
 .transcript p { max-width: 65ch; }
-.pad { width: 100%; aspect-ratio: 900 / 620; touch-action: none; background: repeating-linear-gradient(transparent, transparent 38px, #e8dfca 39px, #e8dfca 40px), var(--surface); border: 2px solid var(--line); border-radius: var(--r-sm); }
+.pad { width: 100%; aspect-ratio: 900 / 620; touch-action: none; background: repeating-linear-gradient(transparent, transparent 38px, #dfe5ec 39px, #dfe5ec 40px), var(--surface); border: 2px solid var(--line); border-radius: var(--r-sm); }
 .pad-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .swatch { width: var(--tap); height: var(--tap); border-radius: 50%; border: 3px solid var(--surface); background: var(--ink); outline: 2px solid var(--line); }
 .swatch[aria-pressed="true"] { outline: 3px solid var(--info); }

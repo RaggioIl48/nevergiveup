@@ -44,10 +44,10 @@ test("login, lesson flow, unlock, xp and leaderboard", async () => {
   const done = await call("/api/lesson", { lessonId: lesson.id, results: perfect });
   assert.equal(done.status, 200);
   assert.equal(done.data.score, 100);
-  assert.equal(done.data.gained, 22);
+  assert.equal(done.data.gained, 26);
   assert.equal(done.data.streak, 1);
   const again = await call("/api/lesson", { lessonId: lesson.id, results: perfect });
-  assert.equal(again.data.gained, 7);
+  assert.equal(again.data.gained, 8);
   assert.equal((await call("/api/lesson", { lessonId: locked.id, results: locked.exercises.map((e) => ({ id: e.id, ok: true })) })).status, 200);
   const board = await call("/api/leaderboard");
   assert.equal(board.data.rows[0].name, "Ana");

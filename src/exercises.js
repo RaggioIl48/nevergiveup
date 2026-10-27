@@ -5,16 +5,16 @@ import { similarity, normalize } from "../content/grade.js";
 import { shuffle } from "../content/index.js";
 
 const PROMPTS = {
-  choice: "Elige la respuesta correcta",
-  read: "Lee y responde",
-  listen: "Escucha y responde",
-  type: "Escribe la palabra o frase que falta",
-  fix: "Toca la palabra incorrecta",
-  order: "Ordena las palabras",
-  dictation: "Escribe lo que escuchas",
-  transform: "Reescribe la frase",
-  match: "Une las parejas",
-  shadow: "Escucha y repite en voz alta",
+  choice: "Choose the correct answer",
+  read: "Read and answer",
+  listen: "Listen and answer",
+  type: "Type the missing word or phrase",
+  fix: "Tap the incorrect word",
+  order: "Put the words in order",
+  dictation: "Write what you hear",
+  transform: "Rewrite the sentence",
+  match: "Match the pairs",
+  shadow: "Listen and repeat aloud",
 };
 
 export const kindPrompt = (kind) => PROMPTS[kind];
@@ -31,8 +31,8 @@ export function correctText(ex) {
 
 function playButtons(text) {
   return h("div", { class: "audio-row" },
-    h("button", { class: "key key-info", type: "button", "aria-label": "Escuchar", onClick: () => speak(text) }, icon("Volume2", 28)),
-    h("button", { class: "key key-quiet", type: "button", "aria-label": "Escuchar despacio", onClick: () => speak(text, { rate: 0.6 }) }, icon("Turtle", 24)),
+    h("button", { class: "key key-info", type: "button", "aria-label": "Listen", onClick: () => speak(text) }, icon("Volume2", 28)),
+    h("button", { class: "key key-quiet", type: "button", "aria-label": "Listen slowly", onClick: () => speak(text, { rate: 0.6 }) }, icon("Turtle", 24)),
   );
 }
 
@@ -54,7 +54,7 @@ function options(ex, api) {
 function textInput(api, placeholder, multiline) {
   const input = h(multiline ? "textarea" : "input", {
     class: "answer-input", type: "text", rows: multiline ? 2 : undefined, placeholder,
-    autocomplete: "off", autocapitalize: "off", autocorrect: "off", spellcheck: "false", "aria-label": "Tu respuesta",
+    autocomplete: "off", autocapitalize: "off", autocorrect: "off", spellcheck: "false", "aria-label": "Your answer",
   });
   input.addEventListener("input", () => api.set(input.value.trim() ? input.value : null));
   api.focus = () => input.focus();
@@ -68,11 +68,11 @@ const RENDERERS = {
     setTimeout(() => speak(ex.say), 250);
     return [playButtons(ex.say), h("p", { class: "stem" }, ex.q), options(ex, api)];
   },
-  type: (ex, api) => [h("p", { class: "stem" }, ex.q), textInput(api, "Escribe en inglés")],
-  transform: (ex, api) => [h("p", { class: "stem" }, ex.q), textInput(api, "Escribe la frase completa", true)],
+  type: (ex, api) => [h("p", { class: "stem" }, ex.q), textInput(api, "Write in English")],
+  transform: (ex, api) => [h("p", { class: "stem" }, ex.q), textInput(api, "Write the full sentence", true)],
   dictation: (ex, api) => {
     setTimeout(() => speak(ex.say), 250);
-    return [playButtons(ex.say), textInput(api, "Escribe lo que escuchas", true)];
+    return [playButtons(ex.say), textInput(api, "Write what you hear", true)];
   },
   fix: (ex, api) => {
     const tokens = ex.q.split(/\s+/).map((word, index) =>
@@ -85,7 +85,7 @@ const RENDERERS = {
           api.set(index);
         },
       }, word));
-    return [h("p", { class: "stem muted" }, "Hay un error en la frase."), h("div", { class: "tokens" }, tokens)];
+    return [h("p", { class: "stem muted" }, "There is a mistake in the sentence."), h("div", { class: "tokens" }, tokens)];
   },
   order: (ex, api) => {
     const words = ex.q.split("/").map((w) => w.trim()).filter(Boolean);
@@ -99,7 +99,7 @@ const RENDERERS = {
     };
     const order = shuffle(words.map((word, id) => ({ word, id })));
     draw();
-    return [h("p", { class: "stem muted" }, "Toca las palabras en orden."), line, bank];
+    return [h("p", { class: "stem muted" }, "Tap the words in order."), line, bank];
   },
   match: (ex, api) => {
     const left = ex.pairs.map((p) => p[0]);
@@ -137,7 +137,7 @@ const RENDERERS = {
     const status = h("p", { class: "stem muted", "aria-live": "polite" }, "");
     const heard = h("p", { class: "heard" });
     let rec = null;
-    const micButton = h("button", { class: "key key-signal", type: "button", "aria-label": "Grabar" }, icon("Mic", 28), h("span", {}, "Hablar"));
+    const micButton = h("button", { class: "key key-signal", type: "button", "aria-label": "Record" }, icon("Mic", 28), h("span", {}, "Speak"));
     const stop = () => { rec?.stop(); rec = null; micButton.classList.remove("recording"); };
     micButton.addEventListener("click", () => {
       if (rec) return stop();
@@ -145,14 +145,14 @@ const RENDERERS = {
       rec = listen({
         onText: (text) => { heard.textContent = text; api.set(similarity(ex.say, text)); },
         onEnd: () => { rec = null; micButton.classList.remove("recording"); },
-        onError: () => { status.textContent = "No se pudo usar el micrófono. Autoevalúate abajo."; },
+        onError: () => { status.textContent = "Could not use the microphone. Rate yourself below."; },
       });
       if (rec) micButton.classList.add("recording");
     });
     const fallback = h("div", { class: "self-rate" },
-      h("p", { class: "muted" }, canListen ? "¿Sin micrófono? Autoevalúate:" : "Tu navegador no reconoce voz. Dilo en voz alta y autoevalúate:"),
-      h("button", { class: "key key-quiet", type: "button", onClick: () => api.set(1) }, "Lo dije bien"),
-      h("button", { class: "key key-quiet", type: "button", onClick: () => api.set(0) }, "Debo repetirlo"));
+      h("p", { class: "muted" }, canListen ? "No microphone? Rate yourself:" : "Speech recognition is unavailable. Say it aloud and rate yourself:"),
+      h("button", { class: "key key-quiet", type: "button", onClick: () => api.set(1) }, "I said it well"),
+      h("button", { class: "key key-quiet", type: "button", onClick: () => api.set(0) }, "I need to repeat it"));
     return [h("p", { class: "stem lg" }, ex.say), playButtons(ex.say), canListen ? micButton : null, heard, status, fallback];
   },
 };

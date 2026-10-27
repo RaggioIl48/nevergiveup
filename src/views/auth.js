@@ -20,18 +20,18 @@ export function authView(root, ctx) {
         render(e.message);
       }
     } },
-      h("label", { for: "f-name" }, "Nombre"), name,
-      h("label", { for: "f-pass" }, "Contraseña"), password,
-      isReg ? [h("label", { for: "f-invite" }, "Código de invitación"), invite, h("p", { class: "hint" }, "Pídeselo a quien te invitó.")] : null,
+      h("label", { for: "f-name" }, "Name"), name,
+      h("label", { for: "f-pass" }, "Password"), password,
+      isReg ? [h("label", { for: "f-invite" }, "Invite code"), invite, h("p", { class: "hint" }, "Ask the person who invited you.")] : null,
       error ? h("p", { class: "form-error", role: "alert" }, error) : null,
-      h("button", { class: "key key-primary wide", type: "submit" }, isReg ? "Crear cuenta" : "Entrar"),
+      h("button", { class: "key key-primary wide", type: "submit" }, isReg ? "Create account" : "Log in"),
     );
     mount(root, h("main", { class: "auth" },
       h("h1", { class: "brand" }, "Upword"),
-      h("p", { class: "tagline" }, "Inglés de B1 a B2, un poco más difícil que lo fácil."),
+      h("p", { class: "tagline" }, "English from B1 to B2, with a challenge at every step."),
       form,
       h("button", { class: "link", type: "button", onClick: () => { mode = isReg ? "login" : "register"; render(); } },
-        isReg ? "Ya tengo cuenta" : "Crear una cuenta nueva"),
+        isReg ? "I already have an account" : "Create a new account"),
     ));
     name.focus();
   };

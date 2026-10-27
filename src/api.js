@@ -15,12 +15,12 @@ export async function api(path, body) {
       credentials: "same-origin",
     });
   } catch {
-    throw new ApiError("Sin conexión con el servidor", 0);
+    throw new ApiError("Can't reach the server", 0);
   }
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     if (res.status === 401 && !["/me", "/login", "/register"].includes(path)) window.dispatchEvent(new Event("unauthorized"));
-    throw new ApiError(data.error || "Error inesperado", res.status);
+    throw new ApiError(data.error || "Unexpected error", res.status);
   }
   return data;
 }

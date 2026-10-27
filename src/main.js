@@ -23,15 +23,15 @@ const ctx = {
 };
 
 const TABS = [
-  ["#/home", "Ruta", "Route"],
-  ["#/practice", "Practicar", "Dumbbell"],
-  ["#/rank", "Ranking", "Trophy"],
-  ["#/me", "Perfil", "User"],
+  ["#/home", "Home", "Route"],
+  ["#/practice", "Practice", "Dumbbell"],
+  ["#/rank", "Leaderboard", "Trophy"],
+  ["#/me", "Profile", "User"],
 ];
 const TAB_VIEWS = { "#/home": homeView, "#/practice": practiceView, "#/rank": rankView, "#/me": meView };
 
 function shell(hash, body) {
-  const nav = h("nav", { class: "tabbar", "aria-label": "Principal" },
+  const nav = h("nav", { class: "tabbar", "aria-label": "Main navigation" },
     TABS.map(([target, label, name]) =>
       h("a", { href: target, class: "tab", "aria-current": target === hash ? "page" : undefined }, icon(name, 26), h("span", {}, label))));
   return h("div", { class: "shell" }, h("main", { id: "main", class: "page" }, body), nav);
