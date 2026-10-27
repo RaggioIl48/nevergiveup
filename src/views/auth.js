@@ -28,7 +28,7 @@ export function authView(root, ctx) {
     );
     mount(root, h("main", { class: "auth" },
       h("h1", { class: "brand" }, "Upword"),
-      h("p", { class: "tagline" }, "English from B1 to B2, with a challenge at every step."),
+      h("p", { class: "tagline" }, "English from A2 to B2, with a challenge at every step."),
       form,
       h("button", { class: "link", type: "button", onClick: () => { mode = isReg ? "login" : "register"; render(); } },
         isReg ? "I already have an account" : "Create a new account"),

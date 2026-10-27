@@ -37,7 +37,7 @@ export async function homeView(root, ctx) {
     : null;
   root.append(stats(me));
   root.append(h("section", { class: "focus-card" },
-    h("div", { class: "focus-head" }, h("small", {}, "Suggested session · 12 min"), h("span", { class: "focus-level" }, me.user.level || "B1")),
+    h("div", { class: "focus-head" }, h("small", {}, "Suggested session · 12 min"), h("span", { class: "focus-level" }, me.user.level || "A2")),
     h("h2", {}, me.dueCount > 0 ? "Review mistakes and reinforce" : "Continue your path to B2"),
     h("p", {}, me.dueCount > 0
     ? `You have ${me.dueCount} ${me.dueCount === 1 ? "question" : "questions"} due for review.`
@@ -51,7 +51,7 @@ export async function homeView(root, ctx) {
   } else {
     root.append(h("p", { class: "level-line" }, "Estimated level: ", h("b", {}, me.user.level), " · Goal: B2"));
   }
-  root.append(h("div", { class: "section-head" }, h("h2", {}, "Your B2 path"), h("span", {}, `${Object.keys(me.progress).length} lessons tracked`)));
+  root.append(h("div", { class: "section-head" }, h("h2", {}, "Your path to B2"), h("span", {}, `${Object.keys(me.progress).length} lessons tracked`)));
   for (const unit of units) {
     root.append(h("section", { class: "unit" },
       h("h2", {}, `${unit.id.slice(1)} · ${unit.title}`),

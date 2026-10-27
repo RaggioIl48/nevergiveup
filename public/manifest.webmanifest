@@ -1,12 +1,12 @@
 {
   "name": "Upword",
   "short_name": "Upword",
-  "description": "Practice English from B1 to B2",
+  "description": "Practice English from A2 to B2",
   "lang": "en",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f2f4f6",
-  "theme_color": "#f2f4f6",
+  "background_color": "#131f24",
+  "theme_color": "#131f24",
   "icons": [
     { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
     { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }

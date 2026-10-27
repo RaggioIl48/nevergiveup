@@ -17,7 +17,7 @@ body, button, a, label { -webkit-touch-callout: none; }
 button, .key, .choice, .node, .row, .tab { touch-action: manipulation; user-select: none; }
 input, textarea { font-size: 16px; }
 
-::selection { background: #d7e3f4; color: var(--ink); }
+::selection { background: #2f5d3a; color: var(--ink); }
 :focus-visible { outline: 3px solid var(--info); outline-offset: 2px; border-radius: 6px; }
 input, textarea { caret-color: var(--signal); }
 
@@ -38,5 +38,5 @@ img, canvas { max-width: 100%; }
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .row:hover, .choice:hover { border-color: #b7c4d4; }
+  .row:hover, .choice:hover { border-color: #4d606b; }
 }
