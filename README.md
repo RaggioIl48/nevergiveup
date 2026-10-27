@@ -53,6 +53,10 @@ Este proyecto ya incluye [render.yaml](./render.yaml) con servicio Docker + disc
 3. Define `INVITE_CODE` como secreto.
 4. Despliega y abre la URL pública HTTPS.
 
+Deploy directo con este repositorio:
+
+`https://render.com/deploy?repo=https://github.com/RaggioIl48/nevergiveup`
+
 ## Límites conocidos
 
 - La escritura a mano no se reconoce automáticamente: escribes en papel, transcribes y recibes feedback basado en reglas. No es una nota oficial.
