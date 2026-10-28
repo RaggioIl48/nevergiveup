@@ -88,7 +88,11 @@ async function generate(system, userText, schema, maxOutputTokens, attempt = 0) 
     await new Promise((r) => setTimeout(r, 1500));
     return generate(system, userText, schema, maxOutputTokens, attempt + 1);
   }
-  if (!res.ok) throw new Error(`Gemini ${res.status}`);
+  if (!res.ok) {
+    const detail = await res.json().then((j) => j?.error?.message, () => "").catch(() => "");
+    const safe = String(detail || "").replace(/AIza[\w-]{20,}/g, "[key]").slice(0, 160);
+    throw new Error(`Gemini ${res.status}${safe ? `: ${safe}` : ""}`);
+  }
   const data = await res.json();
   return JSON.parse(data.candidates?.[0]?.content?.parts?.map((p) => p.text).join("") || "");
 }
