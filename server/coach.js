@@ -1,5 +1,6 @@
-// AI speaking coach. Uses Google Gemini (free tier) when GEMINI_API_KEY is set; otherwise reports unavailable
-// and the client falls back to the local estimate. The key never leaves the server.
+// AI speaking and writing coach. Uses DeepSeek, Groq and/or Google Gemini, whichever keys are set, falling
+// back to the next provider when one fails (e.g. Gemini 503 "high demand"). With no key it reports unavailable
+// and the client falls back to the local estimate. Keys never leave the server.
 const MODEL = process.env.GEMINI_MODEL || "gemini-3.1-flash-lite";
 
 const SCHEMA = {
@@ -73,32 +74,101 @@ const clean = (raw, keys) => {
 export const cleanFeedback = (raw) => clean(raw, ["fluency", "vocabulary", "grammar", "task"]);
 export const cleanWritingFeedback = (raw) => clean(raw, ["task", "organisation", "vocabulary", "grammar"]);
 
-async function generate(system, userText, schema, maxOutputTokens, attempt = 0) {
-  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`, {
-    method: "POST",
-    headers: { "content-type": "application/json", "x-goog-api-key": process.env.GEMINI_API_KEY },
-    body: JSON.stringify({
-      systemInstruction: { parts: [{ text: system }] },
-      contents: [{ role: "user", parts: [{ text: userText }] }],
-      generationConfig: { responseMimeType: "application/json", responseSchema: schema, temperature: 0.3, maxOutputTokens },
-    }),
-    signal: AbortSignal.timeout(25000),
-  });
-  if (res.status === 503 && attempt < 2) {
-    await new Promise((r) => setTimeout(r, 1500));
-    return generate(system, userText, schema, maxOutputTokens, attempt + 1);
-  }
-  if (!res.ok) {
-    const detail = await res.json().then((j) => j?.error?.message, () => "").catch(() => "");
-    const safe = String(detail || "").replace(/AIza[\w-]{20,}/g, "[key]").slice(0, 160);
-    throw new Error(`Gemini ${res.status}${safe ? `: ${safe}` : ""}`);
-  }
-  const data = await res.json();
-  return JSON.parse(data.candidates?.[0]?.content?.parts?.map((p) => p.text).join("") || "");
+// Turns the Gemini response schema into a JSON example so OpenAI-compatible models know the exact shape.
+const example = (schema) => {
+  if (schema.type === "OBJECT") return Object.fromEntries(Object.entries(schema.properties).map(([k, v]) => [k, example(v)]));
+  if (schema.type === "ARRAY") return [example(schema.items)];
+  if (schema.enum) return schema.enum.join(" | ");
+  return schema.type === "NUMBER" ? 0 : "...";
+};
+
+const redact = (s) => String(s || "").replace(/AIza[\w-]{20,}|sk-[\w-]{16,}|gsk_[\w-]{16,}/g, "[key]").slice(0, 160);
+
+async function failure(name, res) {
+  const detail = await res.json().then((j) => j?.error?.message || j?.message, () => "").catch(() => "");
+  return new Error(`${name} ${res.status}${detail ? `: ${redact(detail)}` : ""}`);
 }
 
-export const geminiCoach = {
+const parse = (text) => JSON.parse(String(text || "").trim().replace(/^```(?:json)?\s*|\s*```$/g, ""));
+
+// OpenAI-compatible chat API (DeepSeek, Groq).
+const openAiCompatible = (name, url, keyVar, modelVar, defaultModel) => ({
+  name,
+  available: () => Boolean(process.env[keyVar]),
+  async generate(system, userText, schema, maxTokens) {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${process.env[keyVar]}` },
+      body: JSON.stringify({
+        model: process.env[modelVar] || defaultModel,
+        messages: [
+          { role: "system", content: `${system}\nReply ONLY with a JSON object with exactly this shape (scores are numbers from 0 to 4):\n${JSON.stringify(example(schema))}` },
+          { role: "user", content: userText },
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0.3,
+        max_tokens: maxTokens,
+      }),
+      signal: AbortSignal.timeout(30000),
+    });
+    if (!res.ok) throw await failure(name, res);
+    const data = await res.json();
+    return parse(data.choices?.[0]?.message?.content);
+  },
+});
+
+const gemini = {
+  name: "Gemini",
   available: () => Boolean(process.env.GEMINI_API_KEY),
+  async generate(system, userText, schema, maxOutputTokens, attempt = 0) {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-goog-api-key": process.env.GEMINI_API_KEY },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: system }] },
+        contents: [{ role: "user", parts: [{ text: userText }] }],
+        generationConfig: { responseMimeType: "application/json", responseSchema: schema, temperature: 0.3, maxOutputTokens },
+      }),
+      signal: AbortSignal.timeout(25000),
+    });
+    if (res.status === 503 && attempt < 1) {
+      await new Promise((r) => setTimeout(r, 1500));
+      return gemini.generate(system, userText, schema, maxOutputTokens, attempt + 1);
+    }
+    if (!res.ok) throw await failure("Gemini", res);
+    const data = await res.json();
+    return parse(data.candidates?.[0]?.content?.parts?.map((p) => p.text).join(""));
+  },
+};
+
+export const PROVIDERS = {
+  deepseek: openAiCompatible("DeepSeek", "https://api.deepseek.com/chat/completions", "DEEPSEEK_API_KEY", "DEEPSEEK_MODEL", "deepseek-chat"),
+  groq: openAiCompatible("Groq", "https://api.groq.com/openai/v1/chat/completions", "GROQ_API_KEY", "GROQ_MODEL", "llama-3.3-70b-versatile"),
+  gemini,
+};
+
+// AI_PROVIDERS sets the order, e.g. "groq,deepseek". Providers without a key are skipped.
+const chain = () => (process.env.AI_PROVIDERS || "deepseek,groq,gemini")
+  .split(",").map((s) => PROVIDERS[s.trim().toLowerCase()]).filter((p) => p?.available());
+
+// Tries each configured provider in order and only fails when all of them fail.
+export async function generate(system, userText, schema, maxTokens) {
+  const errors = [];
+  for (const provider of chain()) {
+    try {
+      return await provider.generate(system, userText, schema, maxTokens);
+    } catch (error) {
+      console.warn(`${provider.name} failed, trying the next provider:`, error.message);
+      errors.push(error.name === "TimeoutError" ? `${provider.name}: timed out` : error.message);
+    }
+  }
+  throw new Error(errors.join("; ") || "no AI provider configured");
+}
+
+export const NO_KEY_REASON = "No AI key is set on the server (DEEPSEEK_API_KEY, GROQ_API_KEY or GEMINI_API_KEY)";
+
+export const aiCoach = {
+  available: () => chain().length > 0,
   async review({ prompt, transcript, seconds }) {
     const raw = await generate(SYSTEM, `Task: ${prompt}\nSpeaking time: about ${seconds} seconds\nTranscript:\n"""\n${transcript}\n"""`, SCHEMA, 1500);
     return cleanFeedback(raw);

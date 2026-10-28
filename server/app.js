@@ -6,7 +6,7 @@ import { hashPassword, verifyPassword, createSession, userFromToken, destroySess
 import { lessonIndex, lessonOrder, itemIndex, diagnostic, START_INDEX } from "../content/index.js";
 import { levelFromDifficulty } from "../content/grade.js";
 import { validateSong } from "../content/songs.js";
-import { geminiCoach } from "./coach.js";
+import { aiCoach, NO_KEY_REASON } from "./coach.js";
 
 async function youtubeTitle(videoId) {
   try {
@@ -35,7 +35,7 @@ function localDay(offsetMin, shiftDays = 0) {
   return new Date(Date.now() - offsetMin * 60000 - shiftDays * DAY_MS).toISOString().slice(0, 10);
 }
 
-export function createApp(db, { inviteCode, production = false, distDir = "dist", fetchTitle = youtubeTitle, coach = geminiCoach, backup = null } = {}) {
+export function createApp(db, { inviteCode, production = false, distDir = "dist", fetchTitle = youtubeTitle, coach = aiCoach, backup = null } = {}) {
   const app = express();
   if (backup) {
     app.use((req, res, next) => {
@@ -255,7 +255,7 @@ export function createApp(db, { inviteCode, production = false, distDir = "dist"
 
   const coachUse = new Map();
   app.post("/api/speaking/feedback", requireUser, async (req, res) => {
-    if (!coach.available()) return res.json({ available: false, reason: "GEMINI_API_KEY is not set on the server" });
+    if (!coach.available()) return res.json({ available: false, reason: NO_KEY_REASON });
     const { prompt, transcript, seconds } = req.body || {};
     if (typeof prompt !== "string" || typeof transcript !== "string") return res.status(400).json({ error: "Invalid request" });
     const text = transcript.trim().slice(0, 3000);
@@ -277,7 +277,7 @@ export function createApp(db, { inviteCode, production = false, distDir = "dist"
   });
 
   app.post("/api/writing/feedback", requireUser, async (req, res) => {
-    if (!coach.available() || !coach.reviewWriting) return res.json({ available: false, reason: "GEMINI_API_KEY is not set on the server" });
+    if (!coach.available() || !coach.reviewWriting) return res.json({ available: false, reason: NO_KEY_REASON });
     const { prompt, text, min } = req.body || {};
     if (typeof prompt !== "string" || typeof text !== "string") return res.status(400).json({ error: "Invalid request" });
     const body = text.trim().slice(0, 3000);

@@ -83,3 +83,29 @@ test("speaking feedback: unavailable coach, validation, success and fallback on 
     s.server.close();
   }
 });
+
+test("provider chain falls back when Gemini is overloaded and reports every failure", async () => {
+  const { generate } = await import("../server/coach.js");
+  const saved = { fetch: globalThis.fetch, env: { ...process.env } };
+  const calls = [];
+  const reply = (status, body) => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
+  try {
+    Object.assign(process.env, { AI_PROVIDERS: "gemini,deepseek", GEMINI_API_KEY: "g", DEEPSEEK_API_KEY: "d" });
+    globalThis.fetch = async (url, init) => {
+      calls.push(String(url));
+      if (String(url).includes("googleapis")) return reply(503, { error: { message: "This model is currently experiencing high demand." } });
+      assert.equal(init.headers.authorization, "Bearer d");
+      assert.equal(JSON.parse(init.body).response_format.type, "json_object");
+      return reply(200, { choices: [{ message: { content: '```json\n{"level":"B2"}\n```' } }] });
+    };
+    assert.deepEqual(await generate("sys", "text", { type: "OBJECT", properties: { level: { type: "STRING" } } }, 100), { level: "B2" });
+    assert.equal(calls.filter((u) => u.includes("googleapis")).length, 2);
+    assert.ok(calls.at(-1).includes("deepseek"));
+
+    globalThis.fetch = async (url) => String(url).includes("deepseek") ? reply(402, { error: { message: "Insufficient Balance" } }) : reply(503, {});
+    await assert.rejects(generate("sys", "text", { type: "OBJECT", properties: {} }, 100), /Gemini 503.*DeepSeek 402: Insufficient Balance/);
+  } finally {
+    globalThis.fetch = saved.fetch;
+    for (const k of ["AI_PROVIDERS", "GEMINI_API_KEY", "DEEPSEEK_API_KEY"]) if (k in saved.env) process.env[k] = saved.env[k]; else delete process.env[k];
+  }
+});
