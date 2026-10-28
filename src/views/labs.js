@@ -40,8 +40,16 @@ export async function speakingView(root, ctx) {
     const rubricBox = h("div", { class: "rubric", hidden: true });
     const again = h("button", { class: "link", type: "button", hidden: true, onClick: () => { again.hidden = true; finish(); } }, "Review again");
 
-    const showFeedback = (r, source) => {
-      const label = { fluency: "Fluency and coherence", vocabulary: "Vocabulary", grammar: "Grammar", task: "Answering the task", delivery: "Delivery (pace, fluency)", language: "Language use (variety, range)", development: "Topic development (ideas, links)" };
+    const showFeedback = (r, source, reason) => {
+      const label = { fluency: "Fluency and coherence", vocabulary: "Vocabulary", grammar: "Grammar", task: "Answering the task" };
+      if (source !== "ai") {
+        rubricBox.replaceChildren(
+          h("h2", {}, "Not graded"),
+          h("p", { class: "tip-box" }, `The AI coach could not review this answer${reason ? `: ${reason}` : ""}. Only pace and length were measured, so there is no level. Try Review again in a moment.`),
+          r.notes?.length ? h("ul", { class: "notes" }, r.notes.map((n) => h("li", {}, n))) : "");
+        rubricBox.hidden = false;
+        return;
+      }
       rubricBox.replaceChildren(
         h("h2", {}, `Estimated level: ${r.level}`),
         h("p", { class: "score-big" }, `${r.overall} / 4`),
@@ -49,9 +57,8 @@ export async function speakingView(root, ctx) {
         r.strengths?.length ? h("div", {}, h("h3", {}, "What worked"), h("ul", { class: "notes" }, r.strengths.map((s) => h("li", {}, s)))) : "",
         r.fixes?.length ? h("div", {}, h("h3", {}, "What to fix"), h("ul", { class: "fixes" }, r.fixes.map((f) => h("li", {},
           h("span", { class: "fix-said" }, `“${f.said}”`), h("span", { class: "fix-better" }, f.better), h("small", {}, f.why))))) : "",
-        r.notes?.length ? h("ul", { class: "notes" }, r.notes.map((n) => h("li", {}, n))) : "",
         r.tip ? h("p", { class: "tip-box" }, h("b", {}, "Next time: "), r.tip) : "",
-        h("p", { class: "muted" }, source === "ai" ? "Reviewed by an AI coach from your transcript. It cannot hear your pronunciation." : "Quick estimate from your transcript (AI coach unavailable). It cannot hear your pronunciation."));
+        h("p", { class: "muted" }, "Reviewed by an AI coach from your transcript. It cannot hear your pronunciation."));
       rubricBox.hidden = false;
     };
 
@@ -71,9 +78,9 @@ export async function speakingView(root, ctx) {
       try {
         const res = await api("/speaking/feedback", { prompt: prompt.q, transcript: text, seconds: spoken });
         if (res.available) showFeedback(res.feedback, "ai");
-        else showFeedback(evaluateSpeaking(text, { seconds: spoken, expected: Math.round(prompt.time * 1.8), promptText: prompt.q, confidence: avgConfidence() }), "local");
+        else showFeedback(evaluateSpeaking(text, { seconds: spoken, expected: Math.round(prompt.time * 1.8), promptText: prompt.q, confidence: avgConfidence() }), "local", res.reason);
       } catch (e) {
-        showFeedback(evaluateSpeaking(text, { seconds: spoken, expected: Math.round(prompt.time * 1.8), promptText: prompt.q, confidence: avgConfidence() }), "local");
+        showFeedback(evaluateSpeaking(text, { seconds: spoken, expected: Math.round(prompt.time * 1.8), promptText: prompt.q, confidence: avgConfidence() }), "local", e.message);
         toast(e.message);
       }
       info.textContent = "Edit the transcript if the recognizer misheard you, then press Review again.";
@@ -283,10 +290,11 @@ export async function writingView(root, ctx) {
       feedback.replaceChildren(h("p", { class: "muted", "aria-live": "polite" }, "Reviewing your text…"));
       let score;
       let ai = null;
+      let reason = "";
       try {
         const r = await api("/writing/feedback", { prompt: prompt.q, text: value, min: prompt.min });
-        if (r.available) ai = r.feedback;
-      } catch (e) { toast(e.message); }
+        if (r.available) ai = r.feedback; else reason = r.reason || "";
+      } catch (e) { reason = e.message; toast(e.message); }
       if (ai) {
         score = Math.round((ai.overall / 4) * 100);
         const label = { task: "Task and ideas", organisation: "Organisation", vocabulary: "Vocabulary", grammar: "Grammar" };
@@ -301,8 +309,8 @@ export async function writingView(root, ctx) {
           h("p", { class: "muted" }, "Reviewed by an AI coach. It is a study guide, not an official score."));
       } else {
         const res = evaluateWriting(value);
-        score = res.score;
-        feedback.replaceChildren(h("h2", {}, `Practice score: ${res.score}/100`), h("p", { class: "muted" }, "A rough guide from simple checks (AI coach unavailable), not an official score."), h("ul", {}, res.notes.map((n) => h("li", {}, n))));
+        score = 0;
+        feedback.replaceChildren(h("h2", {}, "Not graded"), h("p", { class: "tip-box" }, `The AI coach could not review this text${reason ? `: ${reason}` : ""}. Only simple checks ran, so there is no score. Press the button again in a moment.`), h("ul", { class: "notes" }, res.notes.map((n) => h("li", {}, n))));
       }
       try { await api("/writing", { promptId: prompt.id, text: value, score }); toast("+15 XP"); } catch (e) { toast(e.message); }
       check.disabled = false;

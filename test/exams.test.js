@@ -50,6 +50,15 @@ test("checkAnswer and scoreExam", () => {
   assert.equal(scoreExam(0, 20).ielts, 3.5);
 });
 
+test("local speaking estimate never rewards a long off-topic answer or reaches B2", () => {
+  const q = "Describe a person who has influenced you and explain why this person is important to you.";
+  const off = "yesterday I go to the market and I buy many tomatoes because the tomatoes is very cheap and then I come back to my house and I cook the food and after that I watch television and I sleep early because I am tired and the weather is hot in my city and I like the summer because I can go to the beach with my friends and we eat ice cream and we play football and it was very good day for me";
+  const r = evaluateSpeaking(off, { seconds: 45, expected: 80, promptText: q });
+  assert.ok(r.overall <= 1.5, `off-topic scored ${r.overall}`);
+  const on = evaluateSpeaking("A person who has influenced me is my grandmother because she taught me that hard work matters. For example, she sold vegetables so I could study. However, she was always happy, and this person is important to me because she never gave up. In my opinion everybody needs somebody like her, and that is why I admire her influence so much in my life.", { seconds: 45, expected: 80, promptText: q });
+  assert.ok(on.overall <= 3.2 && on.level !== "B2");
+});
+
 test("evaluateSpeaking rewards a developed answer over a short one", () => {
   const prompt = "Do you think technology makes people more or less social?";
   const good = "I think technology makes people more social, because we can talk to friends anywhere. For example, my cousin lives abroad and we video call every week. However, some people spend too much time on their phones, so they ignore the people around them. In my opinion, the result depends on how we use these tools, and therefore we should set limits. As a result, technology can bring us closer.";

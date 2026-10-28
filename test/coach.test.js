@@ -34,7 +34,7 @@ test("writing feedback: validation, success, fallback and clamping", async () =>
     return { status: res.status, data: await res.json() };
   };
   let s = await setup({ available: () => false });
-  assert.deepEqual((await post(s, { prompt: "p", text })).data, { available: false });
+  assert.equal((await post(s, { prompt: "p", text })).data.available, false);
   s.server.close();
   let fail = false;
   s = await setup({ available: () => true, reviewWriting: async () => { if (fail) throw new Error("down"); return { level: "B1", overall: 3 }; } });
@@ -43,7 +43,7 @@ test("writing feedback: validation, success, fallback and clamping", async () =>
     assert.equal((await post(s, { text })).status, 400);
     assert.equal((await post(s, { prompt: "p", text, min: 120 })).data.available, true);
     fail = true;
-    assert.deepEqual((await post(s, { prompt: "p", text })).data, { available: false });
+    assert.equal((await post(s, { prompt: "p", text })).data.available, false);
   } finally {
     s.server.close();
   }
@@ -64,7 +64,8 @@ const speech = "I think technology helps people because we can talk to friends e
 
 test("speaking feedback: unavailable coach, validation, success and fallback on error", async () => {
   let s = await setup({ available: () => false });
-  assert.deepEqual((await s.call({ prompt: "p", transcript: speech })).data, { available: false });
+  assert.equal((await s.call({ prompt: "p", transcript: speech })).data.available, false);
+  assert.match((await s.call({ prompt: "p", transcript: speech })).data.reason, /GEMINI_API_KEY/);
   s.server.close();
 
   let fail = false;
@@ -75,7 +76,9 @@ test("speaking feedback: unavailable coach, validation, success and fallback on 
     const ok = await s.call({ prompt: "p", transcript: speech, seconds: 30 });
     assert.equal(ok.data.available, true);
     fail = true;
-    assert.deepEqual((await s.call({ prompt: "p", transcript: speech })).data, { available: false });
+    const failed = (await s.call({ prompt: "p", transcript: speech })).data;
+    assert.equal(failed.available, false);
+    assert.match(failed.reason, /down/);
   } finally {
     s.server.close();
   }

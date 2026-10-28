@@ -116,7 +116,7 @@ export async function meView(root, ctx) {
       h("ul", { class: "skills" }, Object.entries(me.user.skills).map(([k, v]) =>
         h("li", {}, h("span", {}, SKILL_NAMES[k] || k), h("div", { class: "progress-track" }, h("div", { class: "progress-fill", style: `width:${v}%` })), h("b", {}, `${v}%`))))) : null,
     h("section", { class: "block" }, h("h2", {}, "Recent writing"),
-      entries.length ? h("ul", { class: "history" }, entries.slice(0, 5).map((e) => h("li", {}, `${writingPrompts.find((p) => p.id === e.promptId)?.type ?? "Text"} · ${e.words} words · score ${e.score}`))) : h("p", { class: "muted" }, "No saved writing yet.")),
+      entries.length ? h("ul", { class: "history" }, entries.slice(0, 5).map((e) => h("li", {}, `${writingPrompts.find((p) => p.id === e.promptId)?.type ?? "Text"} · ${e.words} words · ${e.score ? `score ${e.score}` : "not graded"}`))) : h("p", { class: "muted" }, "No saved writing yet.")),
     h("div", { class: "stack" },
       h("a", { class: "key key-quiet wide", href: "#/diagnostic" }, "Retake level check"),
       h("button", { class: "key key-quiet wide", type: "button", onClick: async () => { await api("/logout", {}); ctx.me = null; ctx.go("#/home"); } }, icon("LogOut", 20), "Log out")));

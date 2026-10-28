@@ -249,7 +249,7 @@ export function createApp(db, { inviteCode, production = false, distDir = "dist"
 
   const coachUse = new Map();
   app.post("/api/speaking/feedback", requireUser, async (req, res) => {
-    if (!coach.available()) return res.json({ available: false });
+    if (!coach.available()) return res.json({ available: false, reason: "GEMINI_API_KEY is not set on the server" });
     const { prompt, transcript, seconds } = req.body || {};
     if (typeof prompt !== "string" || typeof transcript !== "string") return res.status(400).json({ error: "Invalid request" });
     const text = transcript.trim().slice(0, 3000);
@@ -265,13 +265,13 @@ export function createApp(db, { inviteCode, production = false, distDir = "dist"
       res.json({ available: true, feedback });
     } catch (error) {
       coachUse.set(key, used);
-      if (!production) console.error(error);
-      res.json({ available: false });
+      console.error("speaking feedback failed:", error.message);
+      res.json({ available: false, reason: `The AI service failed (${error.message})` });
     }
   });
 
   app.post("/api/writing/feedback", requireUser, async (req, res) => {
-    if (!coach.available() || !coach.reviewWriting) return res.json({ available: false });
+    if (!coach.available() || !coach.reviewWriting) return res.json({ available: false, reason: "GEMINI_API_KEY is not set on the server" });
     const { prompt, text, min } = req.body || {};
     if (typeof prompt !== "string" || typeof text !== "string") return res.status(400).json({ error: "Invalid request" });
     const body = text.trim().slice(0, 3000);
@@ -287,8 +287,8 @@ export function createApp(db, { inviteCode, production = false, distDir = "dist"
       res.json({ available: true, feedback });
     } catch (error) {
       coachUse.set(key, used);
-      if (!production) console.error(error);
-      res.json({ available: false });
+      console.error("writing feedback failed:", error.message);
+      res.json({ available: false, reason: `The AI service failed (${error.message})` });
     }
   });
 

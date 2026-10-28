@@ -32,7 +32,11 @@ export function evaluateSpeaking(transcript, { seconds, expected, promptText, co
   const development = clamp(0.5 + length * 1.5 + Math.min(1.5, used.length * 0.4) + hit * 0.8, 0, 4);
 
   const scores = { delivery: round(delivery), language: round(language), development: round(development) };
-  const overall = round((scores.delivery + scores.language + scores.development) / 3);
+  // A transcript can show length but not correctness, so this estimate never reaches B2 and is capped hard when off-topic.
+  const offTopic = topic.length > 0 && hit < 0.35;
+  let overall = round((scores.delivery + scores.language + scores.development) / 3);
+  overall = Math.min(overall, offTopic ? 1.5 : 3.2);
+  if (offTopic) scores.development = Math.min(scores.development, 1);
 
   if (wpm && wpm < 90) out.notes.push(`Your pace was about ${wpm} words per minute; aim for 110-160 with fewer long pauses.`);
   else if (wpm > 190) out.notes.push(`Your pace was about ${wpm} words per minute; slow down so every word is clear.`);

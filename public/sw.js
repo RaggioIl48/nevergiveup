@@ -1,4 +1,4 @@
-const CACHE = "upword-v8";
+const CACHE = "upword-v9";
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(["/", "/icon.svg", "/manifest.webmanifest"])));
