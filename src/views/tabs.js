@@ -117,7 +117,7 @@ export async function meView(root, ctx) {
         h("li", {}, h("div", { class: "bar", role: "img", "aria-label": `${d.xp} XP on ${d.day}` }, h("div", { class: "bar-fill", style: `height:${Math.round((d.xp / max) * 100)}%` })), h("small", {}, ["S", "M", "T", "W", "T", "F", "S"][new Date(`${d.day}T12:00:00`).        getDay()]))))),
     me.user.skills ? h("section", { class: "block" }, h("h2", {}, "Skill breakdown"),
       h("ul", { class: "skills" }, Object.entries(me.user.skills).map(([k, v]) =>
-        h("li", {}, h("span", {}, SKILL_NAMES[k] || k), h("div", { class: "progress-track" }, h("div", { class: "progress-fill", style: `width:${v}%` })), h("b", {}, `${v}%`))))) : null,
+        h("li", {}, h("span", {}, SKILL_NAMES[k] || k), h("div", { class: "progress-track" }, h("div", { class: "progress-fill", style: `width:${v}%` })), h("b", {}, `${v}%`))))) : "",
     h("section", { class: "block" }, h("h2", {}, "Recent writing"),
       entries.length ? h("ul", { class: "history" }, entries.slice(0, 5).map((e) => h("li", {}, `${writingPrompts.find((p) => p.id === e.promptId)?.type ?? "Text"} · ${e.words} words · ${e.score ? `score ${e.score}` : "not graded"}`))) : h("p", { class: "muted" }, "No saved writing yet.")),
     h("div", { class: "stack" },

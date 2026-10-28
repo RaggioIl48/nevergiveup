@@ -53,6 +53,7 @@ export async function speakingView(root, ctx) {
       rubricBox.replaceChildren(
         h("h2", {}, `Estimated level: ${r.level}`),
         h("p", { class: "score-big" }, `${r.overall} / 4`),
+        r.why?.length ? h("div", { class: "level-why" }, h("h3", {}, "To reach the next level"), h("ul", { class: "notes" }, r.why.map((s) => h("li", {}, s)))) : "",
         ...Object.entries(r.scores).map(([k, v]) => h("div", { class: "meter" }, h("span", {}, `${label[k]}: ${v}/4`), h("progress", { max: "4", value: String(v) }))),
         r.strengths?.length ? h("div", {}, h("h3", {}, "What worked"), h("ul", { class: "notes" }, r.strengths.map((s) => h("li", {}, s)))) : "",
         r.fixes?.length ? h("div", {}, h("h3", {}, "What to fix"), h("ul", { class: "fixes" }, r.fixes.map((f) => h("li", {},

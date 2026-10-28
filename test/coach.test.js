@@ -135,3 +135,18 @@ test("Groq model that no longer exists: tries known models, then the ones the ke
     for (const k of ["AI_PROVIDERS", "GROQ_API_KEY", "GROQ_MODEL"]) if (k in saved.env) process.env[k] = saved.env[k]; else delete process.env[k];
   }
 });
+
+test("calibrateSpeaking keeps inflated AI levels honest", async () => {
+  const { calibrateSpeaking } = await import("../server/coach.js");
+  const inflated = { level: "B1+", overall: 2.8, scores: { fluency: 3, vocabulary: 3, grammar: 2.5, task: 2.5 } };
+  const a1 = calibrateSpeaking(inflated, { transcript: "I like my city it is big and nice I like food", seconds: 45 });
+  assert.equal(a1.level, "A1");
+  assert.ok(Object.values(a1.scores).every((s) => s <= 1) && a1.overall <= 1);
+  assert.ok(a1.why.length > 0);
+  const simple = "I like my city. It is big. There are many parks and shops. I go to the park with my family on Sunday. We eat ice cream and we play football. The food is good and the people are nice. I like it very much.";
+  assert.equal(calibrateSpeaking(inflated, { transcript: simple, seconds: 40 }).level, "A2");
+  const rich = "I believe remote work is useful because people save time commuting, which means they can spend more energy on their tasks. However, when teams never meet, communication becomes harder, although video calls help a little. For example, my company tried a hybrid model last year, and while productivity stayed stable, newcomers struggled since they rarely received informal advice. If I were a manager, I would combine both approaches so that employees keep flexibility without losing contact with colleagues. That balance seems realistic for most offices.";
+  const b2 = calibrateSpeaking({ level: "B2", overall: 3.3, scores: { fluency: 3.5, vocabulary: 3.5, grammar: 3, task: 3 } }, { transcript: rich, seconds: 50 });
+  assert.equal(b2.level, "B2");
+  assert.equal(calibrateSpeaking({ ...inflated, overall: 1.5, level: "B2" }, { transcript: rich, seconds: 50 }).level, "A2");
+});

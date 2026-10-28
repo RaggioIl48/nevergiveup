@@ -49,7 +49,7 @@ async function route() {
   if (!ctx.me) return authView(root, ctx);
 
   if (TAB_VIEWS[hash]) {
-    const body = h("div", {});
+    const body = h("div", { class: "page-body" });
     mount(root, shell(hash, body));
     return TAB_VIEWS[hash](body, ctx).catch?.((e) => toast(e.message));
   }
