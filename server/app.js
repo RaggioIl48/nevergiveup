@@ -35,8 +35,14 @@ function localDay(offsetMin, shiftDays = 0) {
   return new Date(Date.now() - offsetMin * 60000 - shiftDays * DAY_MS).toISOString().slice(0, 10);
 }
 
-export function createApp(db, { inviteCode, production = false, distDir = "dist", fetchTitle = youtubeTitle, coach = geminiCoach } = {}) {
+export function createApp(db, { inviteCode, production = false, distDir = "dist", fetchTitle = youtubeTitle, coach = geminiCoach, backup = null } = {}) {
   const app = express();
+  if (backup) {
+    app.use((req, res, next) => {
+      if (req.method !== "GET") res.on("finish", () => res.statusCode < 400 && backup.markDirty());
+      next();
+    });
+  }
   app.disable("x-powered-by");
   app.set("trust proxy", 1);
   app.use((req, res, next) => {

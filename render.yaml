@@ -11,9 +11,9 @@ services:
         sync: false
       - key: GEMINI_API_KEY
         sync: false
+      - key: BACKUP_GITHUB_TOKEN
+        sync: false
+      - key: BACKUP_GIST_ID
+        sync: false
       - key: DB_FILE
-        value: /data/upword.db
-    disk:
-      name: upword-data
-      mountPath: /data
-      sizeGB: 1
+        value: /tmp/upword.db

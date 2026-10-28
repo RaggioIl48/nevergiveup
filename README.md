@@ -83,3 +83,7 @@ Practice > Listening exams: timed TOEFL, IELTS, Cambridge B2 First and Real voic
 
 Set GEMINI_API_KEY (free key from Google AI Studio) on the server to get written feedback on speaking answers and on Writing texts: level, scores, what worked, specific fixes and a tip. Optional GEMINI_MODEL (default gemini-3.1-flash-lite). Limits per user per day: 30 speaking reviews, 20 writing reviews. Without a key the app falls back to a local estimate. Only text is sent, never audio or images. On Google's free tier, prompts may be used to improve their products, so tell members before enabling it.
 
+
+## Keeping accounts on Render Free
+
+Render Free wipes the disk on every deploy. Set BACKUP_GITHUB_TOKEN (a GitHub token with the gist scope) and BACKUP_GIST_ID (a secret gist containing a file named upword-backup.json). The server saves a snapshot ~15 s after any change and on shutdown, and restores it on boot when the database is empty.

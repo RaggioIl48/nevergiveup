@@ -43,14 +43,14 @@ export async function homeView(root, ctx) {
     ? `You have ${me.dueCount} ${me.dueCount === 1 ? "question" : "questions"} due for review.`
     : nextLesson ? `Up next: ${nextLesson.title}.` : "Keep going with your next unlocked lesson."),
     h("a", { class: "key key-primary wide", href: me.dueCount > 0 ? "#/review" : `#/lesson/${nextId}` }, me.dueCount > 0 ? "Start review" : "Start practice")));
-  if (!me.user.level) {
-    root.append(h("section", { class: "banner" },
-    h("h2", {}, "Start with a level check"),
-      h("p", {}, "20 adaptive questions (about 8 minutes) to find your level and where to start."),
-      h("a", { class: "key key-primary", href: "#/diagnostic" }, "Take the level check")));
-  } else {
-    root.append(h("p", { class: "level-line" }, "Estimated level: ", h("b", {}, me.user.level), " · Goal: B2"));
-  }
+  const hasLevel = Boolean(me.user.level);
+  root.append(h("div", { class: "duo" },
+    h("a", { class: "tile", href: "#/diagnostic" },
+      h("small", {}, hasLevel ? `Level ${me.user.level} \u00b7 Goal B2` : "Level check"),
+      h("b", {}, hasLevel ? "Retake check" : "Find my level")),
+    h("a", { class: "tile", href: "#/review" },
+      h("small", {}, "Review"),
+      h("b", {}, me.dueCount > 0 ? `${me.dueCount} due` : "Nothing due"))));
   root.append(h("div", { class: "section-head" }, h("h2", {}, "Your path to B2"), h("span", {}, `${Object.keys(me.progress).length} lessons tracked`)));
   const unitOf = (id) => units.find((u) => u.lessons.some((l) => l.id === id))?.id;
   const currentUnit = unitOf(nextId) || units[0].id;
@@ -118,6 +118,5 @@ export async function meView(root, ctx) {
     h("section", { class: "block" }, h("h2", {}, "Recent writing"),
       entries.length ? h("ul", { class: "history" }, entries.slice(0, 5).map((e) => h("li", {}, `${writingPrompts.find((p) => p.id === e.promptId)?.type ?? "Text"} · ${e.words} words · ${e.score ? `score ${e.score}` : "not graded"}`))) : h("p", { class: "muted" }, "No saved writing yet.")),
     h("div", { class: "stack" },
-      h("a", { class: "key key-quiet wide", href: "#/diagnostic" }, "Retake level check"),
       h("button", { class: "key key-quiet wide", type: "button", onClick: async () => { await api("/logout", {}); ctx.me = null; ctx.go("#/home"); } }, icon("LogOut", 20), "Log out")));
 }

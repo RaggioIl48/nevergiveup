@@ -1,5 +1,6 @@
 import { openDb } from "./db.js";
 import { createApp } from "./app.js";
+import { createBackup } from "./backup.js";
 
 const production = process.env.NODE_ENV === "production";
 const inviteCode = process.env.INVITE_CODE || (production ? "" : "upword");
@@ -8,6 +9,17 @@ if (!inviteCode) {
   process.exit(1);
 }
 
-const app = createApp(openDb(), { inviteCode, production });
+const db = openDb();
+const backup = createBackup(db);
+if (production && !backup.enabled) console.warn("BACKUP_GITHUB_TOKEN / BACKUP_GIST_ID not set: accounts will be lost on every deploy.");
+await backup.restoreIfEmpty();
+
+const app = createApp(db, { inviteCode, production, backup });
 const port = Number(process.env.PORT) || 3000;
-app.listen(port, () => console.log(`Upword escuchando en http://localhost:${port}`));
+const server = app.listen(port, () => console.log(`Upword escuchando en http://localhost:${port}`));
+
+// Render sends SIGTERM on deploy: flush the last changes before dying.
+process.on("SIGTERM", async () => {
+  await backup.save();
+  server.close(() => process.exit(0));
+});
