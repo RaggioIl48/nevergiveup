@@ -1,13 +1,14 @@
 import { api } from "../api.js";
 import { h, mount } from "../dom.js";
 import { icon } from "../icons.js";
+import { scene } from "../mascot.js";
 import { runPlayer, lessonSource, diagnosticSource } from "./player.js";
 import { lessonIndex, itemIndex, diagnostic, lessonOrder } from "../../content/index.js";
 import { DIAGNOSTIC_LENGTH } from "../../content/diagnostic.js";
 
 function resultScreen(root, { title, lines, primary, secondary, tone = "good" }) {
   mount(root, h("main", { class: `result ${tone}` },
-    h("div", { class: "result-badge" }, icon(tone === "good" ? "Check" : "RotateCcw", 56)),
+    h("div", { class: "result-scene" }, scene(tone === "good" ? "bonk" : "taunt")),
     h("h1", {}, title),
     h("ul", { class: "result-lines" }, lines.map((l) => h("li", {}, l))),
     h("div", { class: "stack" }, primary, secondary)));

@@ -1,12 +1,5 @@
-const c = (lvl, skill, q, options, a, why) => ({ kind: "choice", lvl, skill, q, options, a, why });
-const r = (lvl, text, q, options, a, why) => ({ kind: "read", lvl, skill: "reading", text, q, options, a, why });
-const l = (lvl, say, q, options, a, why) => ({ kind: "listen", lvl, skill: "listening", say, q, options, a, why });
-const t = (lvl, skill, q, a, why) => ({ kind: "type", lvl, skill, q, a: [].concat(a), why });
-const f = (lvl, q, wrong, why) => {
-  const a = q.split(/\s+/).indexOf(wrong);
-  if (a < 0) throw new Error(`fix token not found: ${wrong} in ${q}`);
-  return { kind: "fix", lvl, skill: "grammar", q, a, why };
-};
+import { c, r, l, t, f } from "./diagnostic-kit.js";
+import { moreItems } from "./diagnostic-more.js";
 
 const items = [
   c(1, "grammar", "She ___ to the gym every Tuesday.", ["go", "goes", "going", "is go"], 1, "Third person singular of the present simple: goes."),
@@ -51,6 +44,6 @@ const items = [
   t(5, "grammar", "By the time we arrive, the film ___ (already / start).", ["will already have started", "will have already started"], "Future perfect: will have + participle."),
 ];
 
-export const diagnostic = items.map((item, index) => ({ ...item, id: `d${String(index + 1).padStart(2, "0")}` }));
+export const diagnostic = [...items, ...moreItems].map((item, index) => ({ ...item, id: `d${String(index + 1).padStart(2, "0")}` }));
 
 export const DIAGNOSTIC_LENGTH = 20;

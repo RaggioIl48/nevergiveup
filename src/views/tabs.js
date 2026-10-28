@@ -1,6 +1,7 @@
 import { api } from "../api.js";
 import { h } from "../dom.js";
 import { icon } from "../icons.js";
+import { scene, storyLine } from "../mascot.js";
 import { units, lessonOrder } from "../../content/index.js";
 import { writingPrompts } from "../../content/labs.js";
 
@@ -44,6 +45,7 @@ export async function homeView(root, ctx) {
     : nextLesson ? `Up next: ${nextLesson.title}.` : "Keep going with your next unlocked lesson."),
     h("a", { class: "key key-primary wide", href: me.dueCount > 0 ? "#/review" : `#/lesson/${nextId}` }, me.dueCount > 0 ? "Start review" : "Start practice")));
   const hasLevel = Boolean(me.user.level);
+  const chapter = Math.max(0, units.findIndex((u) => u.lessons.some((l) => l.id === nextId)));
   root.append(h("div", { class: "duo" },
     h("a", { class: "tile", href: "#/diagnostic" },
       h("small", {}, hasLevel ? `Level ${me.user.level} \u00b7 Goal B2` : "Level check"),
@@ -51,6 +53,7 @@ export async function homeView(root, ctx) {
     h("a", { class: "tile", href: "#/review" },
       h("small", {}, "Review"),
       h("b", {}, me.dueCount > 0 ? `${me.dueCount} due` : "Nothing due"))));
+  root.append(h("section", { class: "story-card" }, scene("idle"), h("div", {}, h("small", {}, `Chapter ${chapter + 1} ? Wulf vs Pingo`), h("p", {}, storyLine(chapter)))));
   root.append(h("div", { class: "section-head" }, h("h2", {}, "Your path to B2"), h("span", {}, `${Object.keys(me.progress).length} lessons tracked`)));
   const unitOf = (id) => units.find((u) => u.lessons.some((l) => l.id === id))?.id;
   const currentUnit = unitOf(nextId) || units[0].id;

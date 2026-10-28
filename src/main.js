@@ -12,6 +12,7 @@ import { lessonView, diagnosticView, reviewView } from "./views/flows.js";
 import { speakingView, writingView, songsView, songAddView, songView } from "./views/labs.js";
 import { listeningView, examsView, examView } from "./views/exams.js";
 import { stopSpeaking } from "./audio.js";
+import { loadingScene } from "./mascot.js";
 
 const root = document.getElementById("app");
 const ctx = {
@@ -42,6 +43,7 @@ async function route() {
   stopSpeaking();
   const hash = location.hash || "#/home";
   if (!ctx.me) {
+    mount(root, loadingScene());
     try { await ctx.refresh(); } catch { ctx.me = null; }
   }
   if (!ctx.me) return authView(root, ctx);

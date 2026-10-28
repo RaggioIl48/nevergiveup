@@ -63,7 +63,8 @@ test("content: A2→B2 route and lab banks keep their structure", () => {
   assert.equal(new Set(writingPrompts.map((prompt) => prompt.id)).size, writingPrompts.length);
   assert.ok(speakingPrompts.length >= 24);
   assert.ok(writingPrompts.length >= 16);
-  assert.equal(diagnostic.length, 36);
+  assert.equal(diagnostic.length, 100);
+  for (let lvl = 1; lvl <= 5; lvl += 1) assert.ok(diagnostic.filter((d) => d.lvl === lvl).length >= 18, `level ${lvl} needs a deep bank`);
   assert.equal(new Set(realListening.map((p) => p.id)).size, realListening.length);
   assert.equal(realListening.length, 14);
   for (const p of realListening) {

@@ -91,6 +91,85 @@
 .tile small { color: var(--muted); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
 .tile b { font-size: 0.95rem; }
 .tile:active { transform: scale(0.97); }
+
+/* Mascots: Wulf the wolf vs Pingo the penguin */
+.scene { display: block; width: 100%; height: auto; overflow: visible; }
+.scene-sm { width: 104px; flex: none; }
+.scene .stars, .scene .peng-dizzy, .scene .bonk { opacity: 0; }
+.scene .bonk { font-family: var(--font-display); font-weight: 800; font-size: 20px; fill: var(--xp); stroke: var(--deep); stroke-width: 4px; paint-order: stroke; transform-box: fill-box; transform-origin: center; }
+.scene .arm { transform: rotate(35deg); transform-origin: 18px 14px; }
+.scene .peng-squash { transform-origin: 0 46px; }
+.scene .tail { transform-origin: -18px 26px; }
+.scene .stars { transform-origin: 0 -38px; }
+.scene .flip-a { transform-origin: -24px 2px; }
+.scene .flip-b { transform-origin: 24px 2px; }
+.scene .wolf-head { transform-origin: 0 -2px; }
+
+.scene-bonk .wolf-move { animation: wolf-lunge 1.5s 0.1s both; }
+.scene-bonk .arm { animation: arm-bonk 1.5s 0.1s both; }
+.scene-bonk .peng-move { animation: peng-knock 1.5s 0.1s both; }
+.scene-bonk .peng-squash { animation: peng-squash 1.5s 0.1s both; }
+.scene-bonk .stars { animation: stars-spin 1.5s 0.1s both; }
+.scene-bonk .peng-dizzy { animation: show-mid 1.5s 0.1s both; }
+.scene-bonk .peng-eyes { animation: hide-mid 1.5s 0.1s both; }
+.scene-bonk .bonk { animation: pop-text 1.5s 0.1s both; }
+.scene-bonk .wolf-head { animation: nod 1.5s 0.1s both; }
+
+.scene-taunt .peng-move { animation: hop 0.5s ease-in-out 3 both; }
+.scene-taunt .flip-a { animation: flap-a 0.25s ease-in-out 6 alternate both; }
+.scene-taunt .flip-b { animation: flap-b 0.25s ease-in-out 6 alternate both; }
+.scene-taunt .wolf-head { transform: rotate(-7deg); }
+.scene-taunt .smile { d: path("M11 1 Q17 -3 24 1"); }
+.scene-taunt .wolf-bob { transform: translateY(3px); }
+
+.scene-chase .wolf-bob { animation: run-bob 0.32s ease-in-out infinite alternate; }
+.scene-chase .peng-move { animation: waddle 0.36s ease-in-out infinite alternate; }
+.scene-chase .arm { animation: arm-shake 0.32s ease-in-out infinite alternate; transform: rotate(-70deg); }
+.scene-chase .tail { animation: wag 0.2s ease-in-out infinite alternate; }
+.scene-chase .flip-a { animation: flap-a 0.18s ease-in-out infinite alternate; }
+.scene-chase .flip-b { animation: flap-b 0.18s ease-in-out infinite alternate; }
+.scene-chase .ground path { animation: ground 0.45s linear infinite; }
+
+.scene-idle .wolf-bob, .scene-idle .peng-move { animation: breathe 2.6s ease-in-out infinite alternate; }
+.scene-idle .tail { animation: wag 0.9s ease-in-out infinite alternate; }
+
+@keyframes wolf-lunge { 0%, 25% { transform: translate(0, 0); } 45%, 62% { transform: translate(32px, -12px); } 88%, 100% { transform: translate(0, 0); } }
+@keyframes arm-bonk { 0% { transform: rotate(35deg); } 22% { transform: rotate(-110deg); } 45%, 62% { transform: rotate(-4deg); } 88%, 100% { transform: rotate(35deg); } }
+@keyframes peng-knock { 0%, 44% { transform: none; } 52% { transform: translateX(10px) rotate(9deg); } 80%, 100% { transform: none; } }
+@keyframes peng-squash { 0%, 44% { transform: scale(1, 1); } 48% { transform: scale(1.18, 0.66); } 58% { transform: scale(0.94, 1.07); } 72%, 100% { transform: scale(1, 1); } }
+@keyframes stars-spin { 0%, 45% { opacity: 0; transform: rotate(0); } 50%, 82% { opacity: 1; } 100% { opacity: 0; transform: rotate(540deg); } }
+@keyframes show-mid { 0%, 45% { opacity: 0; } 50%, 82% { opacity: 1; } 92%, 100% { opacity: 0; } }
+@keyframes hide-mid { 0%, 45% { opacity: 1; } 50%, 82% { opacity: 0; } 92%, 100% { opacity: 1; } }
+@keyframes pop-text { 0%, 44% { opacity: 0; transform: scale(0.4); } 52% { opacity: 1; transform: scale(1.25) rotate(-6deg); } 62%, 85% { opacity: 1; transform: scale(1) rotate(-4deg); } 100% { opacity: 0; } }
+@keyframes nod { 0%, 40% { transform: none; } 48%, 62% { transform: rotate(8deg); } 90%, 100% { transform: none; } }
+@keyframes hop { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-9px); } }
+@keyframes flap-a { from { transform: rotate(0); } to { transform: rotate(-30deg); } }
+@keyframes flap-b { from { transform: rotate(0); } to { transform: rotate(30deg); } }
+@keyframes run-bob { from { transform: translateY(0); } to { transform: translateY(-5px); } }
+@keyframes waddle { from { transform: rotate(-6deg) translateY(0); } to { transform: rotate(6deg) translateY(-4px); } }
+@keyframes arm-shake { from { transform: rotate(-78deg); } to { transform: rotate(-60deg); } }
+@keyframes wag { from { transform: rotate(-12deg); } to { transform: rotate(14deg); } }
+@keyframes ground { to { stroke-dashoffset: 24; } }
+@keyframes breathe { from { transform: translateY(0); } to { transform: translateY(-2px); } }
+
+.splash { min-height: 100dvh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 24px; text-align: center; }
+.splash .scene { width: min(320px, 80vw); }
+.splash-story { max-width: 34ch; font-family: var(--font-display); font-size: 1.1rem; line-height: 1.4; min-height: 4.2em; }
+.splash-status { color: var(--muted); font-size: 0.85rem; }
+
+.feedback-head .scene-sm { margin-left: auto; margin-top: -26px; }
+.result-scene { width: min(260px, 70vw); margin: 0 auto; }
+.story-card { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: var(--surface); border: 2px solid var(--line); border-radius: var(--r-lg); }
+.story-card .scene { width: 96px; flex: none; }
+.story-card small { display: block; color: var(--signal); font-size: 0.72rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; }
+.story-card p { font-size: 0.88rem; color: var(--ink); margin-top: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .scene *, .scene { animation: none !important; }
+  .scene-bonk .stars, .scene-bonk .peng-dizzy, .scene-bonk .bonk { opacity: 1; }
+  .scene-bonk .peng-eyes { opacity: 0; }
+  .scene-chase .arm, .scene-bonk .arm { transform: rotate(-10deg); }
+}
 .section-head { display: flex; align-items: baseline; justify-content: space-between; margin-top: 4px; }
 .section-head h2 { font-size: 1.15rem; }
 .section-head span { font-size: 0.875rem; color: var(--muted); }

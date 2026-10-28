@@ -3,6 +3,8 @@ import { icon } from "../icons.js";
 import { renderExercise, correctText } from "../exercises.js";
 import { grade } from "../../content/grade.js";
 import { stopSpeaking } from "../audio.js";
+import { scene } from "../mascot.js";
+export { diagnosticSource } from "../../content/diagnostic-source.js";
 
 // source: { next(lastOk, lastEx) -> exercise|null, progress() -> 0..1, record(ex, ok, first) }
 export function runPlayer({ root, source, quiet = false, onExit, onFinish }) {
@@ -58,7 +60,7 @@ export function runPlayer({ root, source, quiet = false, onExit, onFinish }) {
     const answer = ok ? null : correctText(current);
     action.className = `action-bar feedback ${ok ? "good" : "bad"}`;
     action.replaceChildren(...[
-      h("div", { class: "feedback-head" }, icon(ok ? "Check" : "X", 28), h("strong", {}, ok ? "Correct" : "Almost")),
+      h("div", { class: "feedback-head" }, icon(ok ? "Check" : "X", 28), h("strong", {}, ok ? "Correct" : "Almost"), scene(ok ? "bonk" : "taunt", { small: true })),
       answer ? h("p", { class: "feedback-answer" }, "Answer: ", h("b", {}, answer)) : null,
       current.why ? h("p", { class: "feedback-why" }, current.why) : null,
       h("button", { class: "key wide " + (ok ? "key-good" : "key-bad"), type: "button", autofocus: true, onClick: () => advance(ok) }, "Continue"),
@@ -93,35 +95,5 @@ export function lessonSource(exercises) {
     },
     next() { return queue.shift() || null; },
     progress: () => Math.min(1, done / exercises.length),
-  };
-}
-
-// Adaptive staircase: harder after a hit, easier after a miss.
-export function diagnosticSource(pool, total) {
-  const used = new Set();
-  const results = [];
-  let level = 2;
-  let lastSkill = null;
-  const pick = () => {
-    for (const delta of [0, 1, -1, 2, -2, 3, -3, 4, -4]) {
-      const candidates = pool.filter((x) => x.lvl === level + delta && !used.has(x.id));
-      if (candidates.length) return candidates.find((c) => c.skill !== lastSkill) || candidates[0];
-    }
-    return null;
-  };
-  const take = () => {
-    if (results.length >= total) return null;
-    const ex = pick();
-    if (ex) { used.add(ex.id); lastSkill = ex.skill; }
-    return ex;
-  };
-  return {
-    results: () => results,
-    record(ex, ok) {
-      results.push({ id: ex.id, ok });
-      level = Math.max(1, Math.min(5, level + (ok ? 1 : -1)));
-    },
-    next: take,
-    progress: () => results.length / total,
   };
 }
