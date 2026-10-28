@@ -86,8 +86,8 @@ Set one or more AI keys on the server to get written feedback on speaking transc
 | Variable | Provider | Notes |
 |---|---|---|
 | `DEEPSEEK_API_KEY` | DeepSeek (platform.deepseek.com) | Paid but very cheap; needs credit. Optional `DEEPSEEK_MODEL` (default `deepseek-chat`). |
-| `GROQ_API_KEY` | Groq (console.groq.com) | Free tier. Optional `GROQ_MODEL` (default `llama-3.3-70b-versatile`). |
-| `GEMINI_API_KEY` | Google AI Studio | Free tier, often 503 under high demand. Optional `GEMINI_MODEL` (default `gemini-3.1-flash-lite`). |
+| `GROQ_API_KEY` | Groq (console.groq.com) | Free tier. Optional `GROQ_MODEL`; otherwise it tries gpt-oss-120b, llama-3.3-70b and smaller ones, then any model the key can list. |
+| `GEMINI_API_KEY` | Google AI Studio | Free tier, often 503 under high demand; it then tries other Flash and Flash-Lite models, which have separate capacity. Optional `GEMINI_MODEL`. |
 
 Providers are tried in the order of `AI_PROVIDERS` (default `groq,gemini,deepseek`, so the free ones go first), skipping those without a key; if one fails (for example Gemini 503), the next one answers. The learner only sees an error when every configured provider failed. Limits per user per day: 30 speaking reviews, 20 writing reviews. Without a key the app falls back to a local estimate. Only text is sent, never audio or images. On Google's free tier, prompts may be used to improve their products, so tell members before enabling it.
 

@@ -1,7 +1,6 @@
 // AI speaking and writing coach. Uses DeepSeek, Groq and/or Google Gemini, whichever keys are set, falling
 // back to the next provider when one fails (e.g. Gemini 503 "high demand"). With no key it reports unavailable
 // and the client falls back to the local estimate. Keys never leave the server.
-const MODEL = process.env.GEMINI_MODEL || "gemini-3.1-flash-lite";
 
 const SCHEMA = {
   type: "OBJECT",
@@ -86,42 +85,94 @@ const redact = (s) => String(s || "").replace(/AIza[\w-]{20,}|sk-[\w-]{16,}|gsk_
 
 async function failure(name, res) {
   const detail = await res.json().then((j) => j?.error?.message || j?.message, () => "").catch(() => "");
-  return new Error(`${name} ${res.status}${detail ? `: ${redact(detail)}` : ""}`);
+  const error = new Error(`${name} ${res.status}${detail ? `: ${redact(detail)}` : ""}`);
+  error.status = res.status;
+  return error;
 }
 
 const parse = (text) => JSON.parse(String(text || "").trim().replace(/^```(?:json)?\s*|\s*```$/g, ""));
 
-// OpenAI-compatible chat API (DeepSeek, Groq).
-const openAiCompatible = (name, url, keyVar, modelVar, defaultModel) => ({
-  name,
-  available: () => Boolean(process.env[keyVar]),
-  async generate(system, userText, schema, maxTokens) {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "content-type": "application/json", authorization: `Bearer ${process.env[keyVar]}` },
-      body: JSON.stringify({
-        model: process.env[modelVar] || defaultModel,
-        messages: [
-          { role: "system", content: `${system}\nReply ONLY with a JSON object with exactly this shape (scores are numbers from 0 to 4):\n${JSON.stringify(example(schema))}` },
-          { role: "user", content: userText },
-        ],
-        response_format: { type: "json_object" },
-        temperature: 0.3,
-        max_tokens: maxTokens,
-      }),
-      signal: AbortSignal.timeout(30000),
-    });
-    if (!res.ok) throw await failure(name, res);
-    const data = await res.json();
-    return parse(data.choices?.[0]?.message?.content);
-  },
-});
+// Model gone, not allowed for this key, overloaded or rate limited: another model of the same provider may work.
+// Bad key (401) or no credit (402) affects every model, so it skips straight to the next provider.
+const tryNextModel = (error) => [400, 403, 404, 429, 500, 502, 503].includes(error.status) || error instanceof SyntaxError;
 
-const gemini = {
+// Tries the configured model first, then the provider's known models, remembering the one that last worked.
+function withModels(provider, envVar, known, discover) {
+  let working = null;
+  return {
+    name: provider.name,
+    available: provider.available,
+    async generate(...args) {
+      const tried = new Set();
+      const errors = [];
+      const attempt = async (list) => {
+        for (const model of list) {
+          if (!model || tried.has(model)) continue;
+          tried.add(model);
+          try {
+            const out = await provider.call(model, ...args);
+            working = model;
+            return { out };
+          } catch (error) {
+            if (!tryNextModel(error)) throw error;
+            errors.push(`${model}: ${error.message.replace(`${provider.name} `, "")}`);
+          }
+        }
+        return null;
+      };
+      const first = await attempt([process.env[envVar], working, ...known]);
+      if (first) return first.out;
+      const found = discover ? await discover().catch(() => []) : [];
+      const second = await attempt(found);
+      if (second) return second.out;
+      throw new Error(`${provider.name} (${errors.slice(-3).join("; ")})`);
+    },
+  };
+}
+
+// OpenAI-compatible chat API (DeepSeek, Groq).
+const openAiCompatible = (name, base, keyVar) => {
+  const headers = () => ({ "content-type": "application/json", authorization: `Bearer ${process.env[keyVar]}` });
+  return {
+    name,
+    available: () => Boolean(process.env[keyVar]),
+    async call(model, system, userText, schema, maxTokens) {
+      const reasoning = /gpt-oss/.test(model);
+      const res = await fetch(`${base}/chat/completions`, {
+        method: "POST",
+        headers: headers(),
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: "system", content: `${system}\nReply ONLY with a JSON object with exactly this shape (scores are numbers from 0 to 4):\n${JSON.stringify(example(schema))}` },
+            { role: "user", content: userText },
+          ],
+          response_format: { type: "json_object" },
+          temperature: 0.3,
+          max_tokens: reasoning ? maxTokens * 3 : maxTokens,
+          ...(reasoning ? { reasoning_effort: "low" } : {}),
+        }),
+        signal: AbortSignal.timeout(30000),
+      });
+      if (!res.ok) throw await failure(name, res);
+      const data = await res.json();
+      return parse(data.choices?.[0]?.message?.content);
+    },
+    // Asks the provider which chat models this key can use right now.
+    async discover() {
+      const res = await fetch(`${base}/models`, { headers: headers(), signal: AbortSignal.timeout(10000) });
+      if (!res.ok) return [];
+      const ids = ((await res.json()).data || []).filter((m) => m.active !== false).map((m) => m.id);
+      return ids.filter((id) => !/whisper|tts|guard|embed|vision|audio|playai|orpheus|compound/i.test(id));
+    },
+  };
+};
+
+const geminiApi = {
   name: "Gemini",
   available: () => Boolean(process.env.GEMINI_API_KEY),
-  async generate(system, userText, schema, maxOutputTokens, attempt = 0) {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`, {
+  async call(model, system, userText, schema, maxOutputTokens) {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
       method: "POST",
       headers: { "content-type": "application/json", "x-goog-api-key": process.env.GEMINI_API_KEY },
       body: JSON.stringify({
@@ -131,20 +182,20 @@ const gemini = {
       }),
       signal: AbortSignal.timeout(25000),
     });
-    if (res.status === 503 && attempt < 1) {
-      await new Promise((r) => setTimeout(r, 1500));
-      return gemini.generate(system, userText, schema, maxOutputTokens, attempt + 1);
-    }
     if (!res.ok) throw await failure("Gemini", res);
     const data = await res.json();
     return parse(data.candidates?.[0]?.content?.parts?.map((p) => p.text).join(""));
   },
 };
 
+const groqApi = openAiCompatible("Groq", "https://api.groq.com/openai/v1", "GROQ_API_KEY");
+const deepseekApi = openAiCompatible("DeepSeek", "https://api.deepseek.com", "DEEPSEEK_API_KEY");
+
+// Each Gemini model has its own capacity, so a 503 on one often leaves the others free.
 export const PROVIDERS = {
-  deepseek: openAiCompatible("DeepSeek", "https://api.deepseek.com/chat/completions", "DEEPSEEK_API_KEY", "DEEPSEEK_MODEL", "deepseek-chat"),
-  groq: openAiCompatible("Groq", "https://api.groq.com/openai/v1/chat/completions", "GROQ_API_KEY", "GROQ_MODEL", "llama-3.3-70b-versatile"),
-  gemini,
+  groq: withModels(groqApi, "GROQ_MODEL", ["openai/gpt-oss-120b", "llama-3.3-70b-versatile", "openai/gpt-oss-20b", "llama-3.1-8b-instant"], groqApi.discover),
+  gemini: withModels(geminiApi, "GEMINI_MODEL", ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-3.6-flash", "gemini-3.8-flash"]),
+  deepseek: withModels(deepseekApi, "DEEPSEEK_MODEL", ["deepseek-chat"], deepseekApi.discover),
 };
 
 // AI_PROVIDERS sets the order, e.g. "groq,deepseek". Providers without a key are skipped.

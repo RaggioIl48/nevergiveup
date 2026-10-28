@@ -99,13 +99,39 @@ test("provider chain falls back when Gemini is overloaded and reports every fail
       return reply(200, { choices: [{ message: { content: '```json\n{"level":"B2"}\n```' } }] });
     };
     assert.deepEqual(await generate("sys", "text", { type: "OBJECT", properties: { level: { type: "STRING" } } }, 100), { level: "B2" });
-    assert.equal(calls.filter((u) => u.includes("googleapis")).length, 2);
+    assert.equal(calls.filter((u) => u.includes("googleapis")).length, 4);
     assert.ok(calls.at(-1).includes("deepseek"));
 
     globalThis.fetch = async (url) => String(url).includes("deepseek") ? reply(402, { error: { message: "Insufficient Balance" } }) : reply(503, {});
-    await assert.rejects(generate("sys", "text", { type: "OBJECT", properties: {} }, 100), /Gemini 503.*DeepSeek 402: Insufficient Balance/);
+    await assert.rejects(generate("sys", "text", { type: "OBJECT", properties: {} }, 100), /Gemini \(.*503.*DeepSeek 402: Insufficient Balance/);
   } finally {
     globalThis.fetch = saved.fetch;
     for (const k of ["AI_PROVIDERS", "GEMINI_API_KEY", "DEEPSEEK_API_KEY"]) if (k in saved.env) process.env[k] = saved.env[k]; else delete process.env[k];
+  }
+});
+
+test("Groq model that no longer exists: tries known models, then the ones the key can list", async () => {
+  const { generate } = await import("../server/coach.js");
+  const saved = { fetch: globalThis.fetch, env: { ...process.env } };
+  const reply = (status, body) => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
+  const used = [];
+  try {
+    Object.assign(process.env, { AI_PROVIDERS: "groq", GROQ_API_KEY: "k" });
+    delete process.env.GROQ_MODEL;
+    globalThis.fetch = async (url, init) => {
+      if (String(url).endsWith("/models")) return reply(200, { data: [{ id: "whisper-large-v3" }, { id: "new-llm-2026", active: true }] });
+      const { model } = JSON.parse(init.body);
+      used.push(model);
+      if (model !== "new-llm-2026") return reply(404, { error: { message: `The model \`${model}\` does not exist or you do not have access to it.` } });
+      return reply(200, { choices: [{ message: { content: '{"level":"B1"}' } }] });
+    };
+    assert.deepEqual(await generate("sys", "text", { type: "OBJECT", properties: {} }, 100), { level: "B1" });
+    assert.ok(used.includes("llama-3.3-70b-versatile") && !used.includes("whisper-large-v3"));
+    used.length = 0;
+    await generate("sys", "text", { type: "OBJECT", properties: {} }, 100);
+    assert.equal(used[0], "new-llm-2026");
+  } finally {
+    globalThis.fetch = saved.fetch;
+    for (const k of ["AI_PROVIDERS", "GROQ_API_KEY", "GROQ_MODEL"]) if (k in saved.env) process.env[k] = saved.env[k]; else delete process.env[k];
   }
 });
