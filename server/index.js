@@ -12,14 +12,16 @@ if (!inviteCode) {
 const db = openDb();
 const backup = createBackup(db);
 if (production && !backup.enabled) console.warn("BACKUP_GITHUB_TOKEN / BACKUP_GIST_ID not set: accounts will be lost on every deploy.");
-await backup.restoreIfEmpty();
+await backup.start();
 
 const app = createApp(db, { inviteCode, production, backup });
 const port = Number(process.env.PORT) || 3000;
 const server = app.listen(port, () => console.log(`Upword escuchando en http://localhost:${port}`));
 
-// Render sends SIGTERM on deploy: flush the last changes before dying.
-process.on("SIGTERM", async () => {
+// Render sends SIGTERM on deploy and when a free instance goes to sleep: flush the last changes before dying.
+const shutdown = async () => {
   await backup.save();
   server.close(() => process.exit(0));
-});
+};
+process.on("SIGTERM", shutdown);
+process.on("SIGINT", shutdown);

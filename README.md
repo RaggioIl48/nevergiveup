@@ -89,9 +89,9 @@ Set one or more AI keys on the server to get written feedback on speaking transc
 | `GROQ_API_KEY` | Groq (console.groq.com) | Free tier. Optional `GROQ_MODEL` (default `llama-3.3-70b-versatile`). |
 | `GEMINI_API_KEY` | Google AI Studio | Free tier, often 503 under high demand. Optional `GEMINI_MODEL` (default `gemini-3.1-flash-lite`). |
 
-Providers are tried in the order of `AI_PROVIDERS` (default `deepseek,groq,gemini`), skipping those without a key; if one fails (for example Gemini 503), the next one answers. The learner only sees an error when every configured provider failed. Limits per user per day: 30 speaking reviews, 20 writing reviews. Without a key the app falls back to a local estimate. Only text is sent, never audio or images. On Google's free tier, prompts may be used to improve their products, so tell members before enabling it.
+Providers are tried in the order of `AI_PROVIDERS` (default `groq,gemini,deepseek`, so the free ones go first), skipping those without a key; if one fails (for example Gemini 503), the next one answers. The learner only sees an error when every configured provider failed. Limits per user per day: 30 speaking reviews, 20 writing reviews. Without a key the app falls back to a local estimate. Only text is sent, never audio or images. On Google's free tier, prompts may be used to improve their products, so tell members before enabling it.
 
 
 ## Keeping accounts on Render Free
 
-Render Free wipes the disk on every deploy. Set BACKUP_GITHUB_TOKEN (a GitHub token with the gist scope) and BACKUP_GIST_ID (a secret gist containing a file named upword-backup.json). The server saves a snapshot ~15 s after any change and on shutdown, and restores it on boot when the database is empty.
+Render Free wipes the disk on every deploy. Set BACKUP_GITHUB_TOKEN (a GitHub token with the gist scope) and BACKUP_GIST_ID (a secret gist containing a file named upword-backup.json). The server saves a snapshot ~15 s after any change and on shutdown, and restores it on boot when the database is empty. If GitHub cannot be reached at boot, the server keeps retrying and refuses writes until the backup is loaded, so it never overwrites the gist with an empty database. Open `/api/health` to check: `backup.enabled` and `backup.ready` must be true, and `lastSavedAt` shows the last snapshot.

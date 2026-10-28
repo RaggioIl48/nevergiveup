@@ -30,46 +30,79 @@ export function createBackup(db, { token = process.env.BACKUP_GITHUB_TOKEN, gist
   const headers = { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json", "User-Agent": "upword", "Content-Type": "application/json" };
   let timer = null;
   let dirty = false;
+  // Until the gist has been read, saving would overwrite the real backup with an empty database.
+  let ready = !enabled;
+  let lastSavedAt = null;
+  let lastError = null;
 
   async function save() {
     clearTimeout(timer);
     timer = null;
-    if (!enabled || !dirty) return;
+    if (!enabled || !ready || !dirty) return;
     dirty = false;
     try {
       const body = JSON.stringify({ files: { [FILE]: { content: JSON.stringify(dumpDb(db)) } } });
       const res = await fetchImpl(API + gistId, { method: "PATCH", headers, body });
       if (!res.ok) throw new Error(`Gist ${res.status}`);
+      lastSavedAt = new Date().toISOString();
+      lastError = null;
     } catch (error) {
       dirty = true;
+      lastError = `save: ${error.message}`;
       console.error("Backup failed:", error.message);
+    }
+  }
+
+  async function restoreIfEmpty() {
+    if (!enabled) return false;
+    if (db.prepare("SELECT COUNT(*) AS n FROM users").get().n > 0) {
+      ready = true;
+      return false;
+    }
+    try {
+      const res = await fetchImpl(API + gistId, { headers });
+      if (!res.ok) throw new Error(`Gist ${res.status}`);
+      const file = (await res.json()).files?.[FILE];
+      let restored = false;
+      if (file?.content || file?.truncated) {
+        const text = file.truncated ? await (await fetchImpl(file.raw_url, { headers })).text() : file.content;
+        restoreDb(db, JSON.parse(text));
+        console.log("Restored accounts and progress from backup.");
+        restored = true;
+      }
+      ready = true;
+      lastError = null;
+      return restored;
+    } catch (error) {
+      lastError = `restore: ${error.message}`;
+      console.error("Restore failed:", error.message);
+      return false;
     }
   }
 
   return {
     enabled,
     save,
+    restoreIfEmpty,
+    isReady: () => ready,
+    status: () => ({ enabled, ready, lastSavedAt, lastError }),
     markDirty() {
       if (!enabled) return;
       dirty = true;
       if (!timer) timer = setTimeout(save, delayMs);
     },
-    async restoreIfEmpty() {
-      if (!enabled) return false;
-      if (db.prepare("SELECT COUNT(*) AS n FROM users").get().n > 0) return false;
-      try {
-        const res = await fetchImpl(API + gistId, { headers });
-        if (!res.ok) throw new Error(`Gist ${res.status}`);
-        const file = (await res.json()).files?.[FILE];
-        if (!file) return false;
-        const text = file.truncated ? await (await fetchImpl(file.raw_url, { headers })).text() : file.content;
-        restoreDb(db, JSON.parse(text));
-        console.log("Restored accounts and progress from backup.");
-        return true;
-      } catch (error) {
-        console.error("Restore failed:", error.message);
-        return false;
-      }
+    // Retries the restore until it works, so a GitHub hiccup at boot never loses the accounts.
+    async start({ retryMs = 30000 } = {}) {
+      await restoreIfEmpty();
+      if (ready) return;
+      const retry = setInterval(async () => {
+        await restoreIfEmpty();
+        if (ready) {
+          clearInterval(retry);
+          if (dirty) save();
+        }
+      }, retryMs);
+      retry.unref?.();
     },
   };
 }

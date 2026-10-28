@@ -148,7 +148,7 @@ export const PROVIDERS = {
 };
 
 // AI_PROVIDERS sets the order, e.g. "groq,deepseek". Providers without a key are skipped.
-const chain = () => (process.env.AI_PROVIDERS || "deepseek,groq,gemini")
+const chain = () => (process.env.AI_PROVIDERS || "groq,gemini,deepseek")
   .split(",").map((s) => PROVIDERS[s.trim().toLowerCase()]).filter((p) => p?.available());
 
 // Tries each configured provider in order and only fails when all of them fail.

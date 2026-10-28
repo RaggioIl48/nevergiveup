@@ -53,7 +53,7 @@ export async function homeView(root, ctx) {
     h("a", { class: "tile", href: "#/review" },
       h("small", {}, "Review"),
       h("b", {}, me.dueCount > 0 ? `${me.dueCount} due` : "Nothing due"))));
-  root.append(h("section", { class: "story-card" }, scene("idle"), h("div", {}, h("small", {}, `Chapter ${chapter + 1} ? Wulf vs Pingo`), h("p", {}, storyLine(chapter)))));
+  root.append(h("section", { class: "story-card" }, scene("idle"), h("div", {}, h("small", {}, `Chapter ${chapter + 1} · Wulf vs Pingo`), h("p", {}, storyLine(chapter)))));
   root.append(h("div", { class: "section-head" }, h("h2", {}, "Your path to B2"), h("span", {}, `${Object.keys(me.progress).length} lessons tracked`)));
   const unitOf = (id) => units.find((u) => u.lessons.some((l) => l.id === id))?.id;
   const currentUnit = unitOf(nextId) || units[0].id;

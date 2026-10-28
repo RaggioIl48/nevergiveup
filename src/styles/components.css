@@ -95,62 +95,108 @@
 /* Mascots: Wulf the wolf vs Pingo the penguin */
 .scene { display: block; width: 100%; height: auto; overflow: visible; }
 .scene-sm { width: 104px; flex: none; }
-.scene .stars, .scene .peng-dizzy, .scene .bonk { opacity: 0; }
+.scene .stars, .scene .peng-dizzy, .scene .bonk, .scene .impact, .scene .haha, .scene .speed, .scene .sweat { opacity: 0; }
 .scene .bonk { font-family: var(--font-display); font-weight: 800; font-size: 20px; fill: var(--xp); stroke: var(--deep); stroke-width: 4px; paint-order: stroke; transform-box: fill-box; transform-origin: center; }
-.scene .arm { transform: rotate(35deg); transform-origin: 18px 14px; }
-.scene .peng-squash { transform-origin: 0 46px; }
-.scene .tail { transform-origin: -18px 26px; }
-.scene .stars { transform-origin: 0 -38px; }
-.scene .flip-a { transform-origin: -24px 2px; }
-.scene .flip-b { transform-origin: 24px 2px; }
+.scene .haha { font-family: var(--font-display); font-weight: 800; font-size: 11px; fill: var(--signal); stroke: #fff; stroke-width: 3px; paint-order: stroke; transform-box: fill-box; transform-origin: center; }
+.scene .impact { transform-box: fill-box; transform-origin: center; }
+.scene .ground-hill { fill: var(--line); }
+.scene .ground-dash { stroke: var(--fill); }
+.scene .arm { transform: rotate(35deg); transform-origin: 14px 12px; }
+.scene .wolf-bob { transform-origin: 0 58px; }
+.scene .peng-squash { transform-origin: 0 47px; }
+.scene .tail { transform-origin: -16px 30px; }
+.scene .scarf-end { transform-origin: -10px 7px; }
+.scene .leg-a { transform-origin: -9.5px 42px; }
+.scene .leg-b { transform-origin: 8.5px 42px; }
+.scene .foot-a { transform-origin: -8px 44px; }
+.scene .foot-b { transform-origin: 8px 44px; }
+.scene .stars { transform-origin: 0 -40px; }
+.scene .flip-a { transform-origin: -22px 0; }
+.scene .flip-b { transform-origin: 22px 0; }
+.scene .beak-low { transform-origin: -9px -7px; }
 .scene .wolf-head { transform-origin: 0 -2px; }
+.scene .eyes, .scene .peng-eyes { transform-box: fill-box; transform-origin: center; animation: blink 4.2s 1.2s infinite; }
+.scene .peng-eyes { animation-delay: 2.3s; }
 
-.scene-bonk .wolf-move { animation: wolf-lunge 1.5s 0.1s both; }
-.scene-bonk .arm { animation: arm-bonk 1.5s 0.1s both; }
-.scene-bonk .peng-move { animation: peng-knock 1.5s 0.1s both; }
-.scene-bonk .peng-squash { animation: peng-squash 1.5s 0.1s both; }
-.scene-bonk .stars { animation: stars-spin 1.5s 0.1s both; }
-.scene-bonk .peng-dizzy { animation: show-mid 1.5s 0.1s both; }
-.scene-bonk .peng-eyes { animation: hide-mid 1.5s 0.1s both; }
-.scene-bonk .bonk { animation: pop-text 1.5s 0.1s both; }
-.scene-bonk .wolf-head { animation: nod 1.5s 0.1s both; }
+/* Wulf wins: wind up, pounce, BONK, Pingo drops the book and sees stars. */
+.scene-bonk .wolf-move { animation: wolf-lunge 1.6s 0.1s both; }
+.scene-bonk .wolf-bob { animation: wolf-stretch 1.6s 0.1s both; }
+.scene-bonk .arm { animation: arm-bonk 1.6s 0.1s both; }
+.scene-bonk .leg-a, .scene-bonk .leg-b { animation: leg-tuck 1.6s 0.1s both; }
+.scene-bonk .scarf-end { animation: scarf-fly 1.6s 0.1s both; }
+.scene-bonk .peng-move { animation: peng-knock 1.6s 0.1s both; }
+.scene-bonk .peng-squash { animation: peng-squash 1.6s 0.1s both; }
+.scene-bonk .book { animation: book-fly 1.6s 0.1s both; }
+.scene-bonk .stars { animation: stars-spin 1.6s 0.1s both; }
+.scene-bonk .peng-dizzy { animation: show-mid 1.6s 0.1s both; }
+.scene-bonk .peng-eyes { animation: hide-mid 1.6s 0.1s both; }
+.scene-bonk .impact { animation: impact 1.6s 0.1s both; }
+.scene-bonk .bonk { animation: pop-text 1.6s 0.1s both; }
+.scene-bonk .wolf-head { animation: nod 1.6s 0.1s both; }
 
+/* Pingo wins the round: he hops and laughs, Wulf sighs. */
 .scene-taunt .peng-move { animation: hop 0.5s ease-in-out 3 both; }
 .scene-taunt .flip-a { animation: flap-a 0.25s ease-in-out 6 alternate both; }
 .scene-taunt .flip-b { animation: flap-b 0.25s ease-in-out 6 alternate both; }
+.scene-taunt .beak-low { animation: laugh 0.25s ease-in-out 6 alternate both; }
+.scene-taunt .haha { animation: haha 1.5s both; }
+.scene-taunt .sweat { animation: sweat 1.5s 0.2s both; }
 .scene-taunt .wolf-head { transform: rotate(-7deg); }
-.scene-taunt .smile { d: path("M11 1 Q17 -3 24 1"); }
-.scene-taunt .wolf-bob { transform: translateY(3px); }
+.scene-taunt .smile { d: path("M18 -7 Q24 -11.5 30.5 -7"); }
+.scene-taunt .wolf-bob { transform: translateY(3px) scale(1.02, 0.97); }
+.scene-taunt .arm { transform: rotate(70deg); }
 
+/* Loading: a running chase. */
 .scene-chase .wolf-bob { animation: run-bob 0.32s ease-in-out infinite alternate; }
-.scene-chase .peng-move { animation: waddle 0.36s ease-in-out infinite alternate; }
-.scene-chase .arm { animation: arm-shake 0.32s ease-in-out infinite alternate; transform: rotate(-70deg); }
+.scene-chase .leg-a { animation: stride 0.32s ease-in-out infinite alternate; }
+.scene-chase .leg-b { animation: stride 0.32s ease-in-out infinite alternate-reverse; }
+.scene-chase .arm { animation: arm-reach 0.32s ease-in-out infinite alternate; }
 .scene-chase .tail { animation: wag 0.2s ease-in-out infinite alternate; }
+.scene-chase .scarf-end { animation: flutter 0.16s ease-in-out infinite alternate; }
+.scene-chase .peng-move { animation: waddle 0.36s ease-in-out infinite alternate; }
+.scene-chase .foot-a { animation: step 0.36s ease-in-out infinite alternate; }
+.scene-chase .foot-b { animation: step 0.36s ease-in-out infinite alternate-reverse; }
 .scene-chase .flip-a { animation: flap-a 0.18s ease-in-out infinite alternate; }
 .scene-chase .flip-b { animation: flap-b 0.18s ease-in-out infinite alternate; }
-.scene-chase .ground path { animation: ground 0.45s linear infinite; }
+.scene-chase .speed { animation: speed 0.45s linear infinite; }
+.scene-chase .ground-dash { animation: ground 0.45s linear infinite; }
 
-.scene-idle .wolf-bob, .scene-idle .peng-move { animation: breathe 2.6s ease-in-out infinite alternate; }
+.scene-idle .wolf-bob, .scene-idle .peng-squash { animation: breathe 2.6s ease-in-out infinite alternate; }
+.scene-idle .peng-squash { animation-delay: -1.3s; }
 .scene-idle .tail { animation: wag 0.9s ease-in-out infinite alternate; }
+.scene-idle .scarf-end { animation: flutter 1.4s ease-in-out infinite alternate; }
 
-@keyframes wolf-lunge { 0%, 25% { transform: translate(0, 0); } 45%, 62% { transform: translate(32px, -12px); } 88%, 100% { transform: translate(0, 0); } }
-@keyframes arm-bonk { 0% { transform: rotate(35deg); } 22% { transform: rotate(-110deg); } 45%, 62% { transform: rotate(-4deg); } 88%, 100% { transform: rotate(35deg); } }
-@keyframes peng-knock { 0%, 44% { transform: none; } 52% { transform: translateX(10px) rotate(9deg); } 80%, 100% { transform: none; } }
-@keyframes peng-squash { 0%, 44% { transform: scale(1, 1); } 48% { transform: scale(1.18, 0.66); } 58% { transform: scale(0.94, 1.07); } 72%, 100% { transform: scale(1, 1); } }
-@keyframes stars-spin { 0%, 45% { opacity: 0; transform: rotate(0); } 50%, 82% { opacity: 1; } 100% { opacity: 0; transform: rotate(540deg); } }
-@keyframes show-mid { 0%, 45% { opacity: 0; } 50%, 82% { opacity: 1; } 92%, 100% { opacity: 0; } }
-@keyframes hide-mid { 0%, 45% { opacity: 1; } 50%, 82% { opacity: 0; } 92%, 100% { opacity: 1; } }
-@keyframes pop-text { 0%, 44% { opacity: 0; transform: scale(0.4); } 52% { opacity: 1; transform: scale(1.25) rotate(-6deg); } 62%, 85% { opacity: 1; transform: scale(1) rotate(-4deg); } 100% { opacity: 0; } }
-@keyframes nod { 0%, 40% { transform: none; } 48%, 62% { transform: rotate(8deg); } 90%, 100% { transform: none; } }
+@keyframes blink { 0%, 93%, 100% { transform: scaleY(1); } 96% { transform: scaleY(0.12); } }
+@keyframes wolf-lunge { 0%, 18% { transform: none; } 30% { transform: translate(-5px, 2px); } 46%, 60% { transform: translate(42px, -16px); } 88%, 100% { transform: none; } }
+@keyframes wolf-stretch { 0%, 18% { transform: none; } 30% { transform: scale(1.06, 0.9); } 40% { transform: scale(0.94, 1.08); } 50%, 100% { transform: none; } }
+@keyframes arm-bonk { 0%, 18% { transform: rotate(35deg); } 32% { transform: rotate(-125deg); } 46%, 60% { transform: rotate(-16deg); } 88%, 100% { transform: rotate(35deg); } }
+@keyframes leg-tuck { 0%, 30% { transform: none; } 40%, 62% { transform: rotate(-24deg); } 80%, 100% { transform: none; } }
+@keyframes scarf-fly { 0%, 30% { transform: none; } 46% { transform: rotate(28deg); } 62% { transform: rotate(-8deg); } 80%, 100% { transform: none; } }
+@keyframes peng-knock { 0%, 46% { transform: none; } 54% { transform: translateX(10px) rotate(9deg); } 80%, 100% { transform: none; } }
+@keyframes peng-squash { 0%, 46% { transform: scale(1, 1); } 50% { transform: scale(1.2, 0.64); } 60% { transform: scale(0.94, 1.07); } 74%, 100% { transform: scale(1, 1); } }
+@keyframes book-fly { 0%, 48% { transform: none; opacity: 1; } 66% { transform: translate(-40px, -46px) rotate(-200deg); opacity: 1; } 86% { transform: translate(-96px, -26px) rotate(-360deg); opacity: 1; } 100% { transform: translate(-96px, -26px) rotate(-360deg); opacity: 0; } }
+@keyframes impact { 0%, 46% { opacity: 0; transform: scale(0.2); } 50% { opacity: 1; transform: scale(1.3) rotate(12deg); } 60% { opacity: 0; transform: scale(1.6) rotate(20deg); } 100% { opacity: 0; } }
+@keyframes stars-spin { 0%, 47% { opacity: 0; transform: rotate(0); } 52%, 84% { opacity: 1; } 100% { opacity: 0; transform: rotate(540deg); } }
+@keyframes show-mid { 0%, 47% { opacity: 0; } 52%, 84% { opacity: 1; } 94%, 100% { opacity: 0; } }
+@keyframes hide-mid { 0%, 47% { opacity: 1; } 52%, 84% { opacity: 0; } 94%, 100% { opacity: 1; } }
+@keyframes pop-text { 0%, 46% { opacity: 0; transform: scale(0.4); } 53% { opacity: 1; transform: scale(1.25) rotate(-6deg); } 63%, 86% { opacity: 1; transform: scale(1) rotate(-4deg); } 100% { opacity: 0; } }
+@keyframes nod { 0%, 42% { transform: none; } 50%, 62% { transform: rotate(8deg); } 90%, 100% { transform: none; } }
 @keyframes hop { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-9px); } }
+@keyframes laugh { from { transform: rotate(0); } to { transform: rotate(-24deg); } }
+@keyframes haha { 0% { opacity: 0; transform: translateY(6px) scale(0.6); } 20%, 75% { opacity: 1; transform: translateY(0) scale(1) rotate(-5deg); } 100% { opacity: 0; transform: translateY(-6px) rotate(-5deg); } }
+@keyframes sweat { 0% { opacity: 0; transform: translateY(-3px); } 20%, 70% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateY(6px); } }
 @keyframes flap-a { from { transform: rotate(0); } to { transform: rotate(-30deg); } }
 @keyframes flap-b { from { transform: rotate(0); } to { transform: rotate(30deg); } }
-@keyframes run-bob { from { transform: translateY(0); } to { transform: translateY(-5px); } }
+@keyframes run-bob { from { transform: translateY(0) scale(1.02, 0.98); } to { transform: translateY(-5px) scale(0.98, 1.02); } }
+@keyframes stride { from { transform: rotate(-28deg); } to { transform: rotate(28deg); } }
+@keyframes step { from { transform: translateY(0); } to { transform: translateY(-4px); } }
+@keyframes arm-reach { from { transform: rotate(-16deg); } to { transform: rotate(-2deg); } }
+@keyframes flutter { from { transform: rotate(-6deg); } to { transform: rotate(10deg); } }
 @keyframes waddle { from { transform: rotate(-6deg) translateY(0); } to { transform: rotate(6deg) translateY(-4px); } }
-@keyframes arm-shake { from { transform: rotate(-78deg); } to { transform: rotate(-60deg); } }
 @keyframes wag { from { transform: rotate(-12deg); } to { transform: rotate(14deg); } }
+@keyframes speed { 0% { opacity: 0; transform: translateX(10px); } 40% { opacity: 1; } 100% { opacity: 0; transform: translateX(-14px); } }
 @keyframes ground { to { stroke-dashoffset: 24; } }
-@keyframes breathe { from { transform: translateY(0); } to { transform: translateY(-2px); } }
+@keyframes breathe { from { transform: scale(1, 1); } to { transform: scale(1.015, 1.03); } }
 
 .splash { min-height: 100dvh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 24px; text-align: center; }
 .splash .scene { width: min(320px, 80vw); }
@@ -168,7 +214,8 @@
   .scene *, .scene { animation: none !important; }
   .scene-bonk .stars, .scene-bonk .peng-dizzy, .scene-bonk .bonk { opacity: 1; }
   .scene-bonk .peng-eyes { opacity: 0; }
-  .scene-chase .arm, .scene-bonk .arm { transform: rotate(-10deg); }
+  .scene-bonk .arm, .scene-chase .arm { transform: rotate(-10deg); }
+  .scene-taunt .haha, .scene-taunt .sweat { opacity: 1; }
 }
 .section-head { display: flex; align-items: baseline; justify-content: space-between; margin-top: 4px; }
 .section-head h2 { font-size: 1.15rem; }

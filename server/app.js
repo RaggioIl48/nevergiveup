@@ -37,9 +37,13 @@ function localDay(offsetMin, shiftDays = 0) {
 
 export function createApp(db, { inviteCode, production = false, distDir = "dist", fetchTitle = youtubeTitle, coach = aiCoach, backup = null } = {}) {
   const app = express();
+  app.get("/api/health", (req, res) => res.json({ ok: true, backup: backup ? backup.status() : { enabled: false } }));
   if (backup) {
     app.use((req, res, next) => {
-      if (req.method !== "GET") res.on("finish", () => res.statusCode < 400 && backup.markDirty());
+      if (req.method === "GET") return next();
+      // Writing before the backup is restored would create accounts that the restore later clobbers.
+      if (!backup.isReady() && req.path.startsWith("/api/")) return res.status(503).json({ error: "The server is loading saved accounts. Try again in a minute." });
+      res.on("finish", () => res.statusCode < 400 && backup.markDirty());
       next();
     });
   }
