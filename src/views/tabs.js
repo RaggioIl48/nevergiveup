@@ -14,11 +14,27 @@ function unlocked(me, id) {
   return (me.progress[lessonOrder[index - 1]] ?? 0) >= MASTERY;
 }
 
-function stats(me) {
+const ago = (iso) => {
+  const min = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+  return min < 1 ? "just now" : min < 60 ? `${min} min ago` : new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+};
+
+// Whether the server is really keeping accounts: green once the backup has been written, red with the reason
+// when it cannot be. Shown on Home and Profile so a broken backup is never silent.
+function saveStatus(health) {
+  const b = health?.backup;
+  if (!b) return h("span", { class: "save-pill unknown" }, "Save status unknown");
+  if (b.problem) return h("a", { class: "save-pill bad", href: "#/me", title: b.problem }, icon("AlertCircle", 16), "Not saved");
+  if (b.lastSavedAt) return h("span", { class: "save-pill ok", title: new Date(b.lastSavedAt).toLocaleString() }, icon("Check", 16), `Progress saved · ${ago(b.lastSavedAt)}`);
+  return h("span", { class: "save-pill unknown" }, "Saving…");
+}
+
+function stats(me, health) {
   const pct = Math.min(100, Math.round((me.todayXp / me.dailyGoal) * 100));
   return h("header", { class: "stats" },
     h("div", { class: "chip streak" }, icon("Flame", 22), h("b", {}, me.streak), h("span", { class: "sr" }, " day streak")),
     h("div", { class: "chip xp" }, icon("Zap", 22), h("b", {}, me.xp), h("span", { class: "sr" }, " XP")),
+    h("div", { class: "save-slot" }, saveStatus(health)),
     h("div", { class: "goal" },
       h("div", { class: "goal-label" }, icon("Target", 18), `Today's goal: ${Math.min(me.todayXp, me.dailyGoal)}/${me.dailyGoal} XP`),
       h("div", { class: "progress-track", role: "progressbar", "aria-valuenow": String(pct), "aria-valuemin": "0", "aria-valuemax": "100", "aria-label": "Daily goal" }, h("div", { class: "progress-fill", style: `width:${pct}%` }))));
@@ -32,12 +48,12 @@ function nextLessonId(me) {
 }
 
 export async function homeView(root, ctx) {
-  const me = await ctx.refresh();
+  const [me, health] = await Promise.all([ctx.refresh(), api("/health").catch(() => null)]);
   const nextId = nextLessonId(me);
   const nextLesson = lessonOrder.includes(nextId)
     ? units.flatMap((u) => u.lessons).find((l) => l.id === nextId)
     : null;
-  root.append(stats(me));
+  root.append(stats(me, health));
   root.append(h("section", { class: "focus-card" },
     h("div", { class: "focus-head" }, h("small", {}, "Suggested session · 12 min"), h("span", { class: "focus-level" }, me.user.level || "A2")),
     h("h2", {}, me.dueCount > 0 ? "Review mistakes and reinforce" : "Continue your path to B2"),
@@ -115,12 +131,12 @@ export async function meView(root, ctx) {
   const max = Math.max(30, ...me.week.map((d) => d.xp));
   const saving = health?.backup?.problem
     ? h("p", { class: "storage-warn", role: "status" }, h("b", {}, "Accounts are not being saved. "), health.backup.problem)
-    : health?.backup?.lastSavedAt ? h("p", { class: "muted storage-ok" }, `Progress saved · ${new Date(health.backup.lastSavedAt).toLocaleString()}`) : "";
+    : "";
   root.append(
     saving,
     h("h1", { class: "title" }, me.user.name),
     h("p", { class: "muted" }, me.user.level ? `Estimated level: ${me.user.level}` : "Not assessed yet"),
-    stats(me),
+    stats(me, health),
     h("section", { class: "block" }, h("h2", {}, "This week"),
       h("ul", { class: "week" }, me.week.map((d) =>
         h("li", {}, h("div", { class: "bar", role: "img", "aria-label": `${d.xp} XP on ${d.day}` }, h("div", { class: "bar-fill", style: `height:${Math.round((d.xp / max) * 100)}%` })), h("small", {}, ["S", "M", "T", "W", "T", "F", "S"][new Date(`${d.day}T12:00:00`).        getDay()]))))),

@@ -459,3 +459,9 @@ div.rubric .score-big, .feedback-card .score-big { margin: -8px 0 0; line-height
 .lookup-ex { color: var(--muted); font-style: italic; }
 @keyframes lookup-in { from { opacity: 0; transform: translateY(4px) scale(0.98); } }
 @media (prefers-reduced-motion: reduce) { .lookup-pop { animation: none; } }
+
+/* Save status pill (Home and Profile) */
+.save-slot { justify-self: end; min-width: 0; }
+.save-pill { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; font-size: 0.8rem; font-weight: 700; white-space: nowrap; text-decoration: none; border: 2px solid var(--line); color: var(--muted); }
+.save-pill.ok { color: var(--correct-text, var(--correct)); border-color: var(--correct); background: var(--correct-soft); }
+.save-pill.bad { color: var(--wrong-text, var(--wrong)); border-color: var(--wrong); background: var(--wrong-soft); }
