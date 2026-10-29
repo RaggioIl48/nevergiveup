@@ -55,6 +55,11 @@ export function createBackup(db, { token = process.env.BACKUP_GITHUB_TOKEN, gist
     try {
       const body = JSON.stringify({ files: { [FILE]: { content: JSON.stringify(dumpDb(db)) } } });
       const res = await fetchImpl(API + gistId, { method: "PATCH", headers, body });
+      // The gist was readable at boot, so a 403/404 here can only mean the token may read but not write it.
+      if (res.status === 403 || res.status === 404) {
+        const scopes = res.headers?.get?.("x-oauth-scopes");
+        throw new Error(`GitHub found the gist but this token cannot write to it (${res.status}). Create a classic token with the "gist" scope from the account that owns the gist${scopes != null ? ` (current scopes: ${scopes || "none"})` : ""} and put it in BACKUP_GITHUB_TOKEN`);
+      }
       if (!res.ok) throw new Error(explain(res.status));
       lastSavedAt = new Date().toISOString();
       lastError = null;

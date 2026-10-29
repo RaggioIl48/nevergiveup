@@ -69,5 +69,18 @@ test("backup accepts a pasted gist URL and explains bad config", async () => {
   assert.match(createBackup(db, { token: "", gistId: "" }).status().problem, /Backup is off/);
   const denied = createBackup(db, { token: "t", gistId: "aaaabbbbccccddddeeeeffff00001111", fetchImpl: async (url, opts = {}) => opts.method === "PATCH" ? { ok: false, status: 403 } : { ok: true, json: async () => ({ files: {} }) } });
   await denied.start();
-  assert.match(denied.status().problem, /needs the gist permission/);
+  assert.match(denied.status().problem, /cannot write to it \(403\)/);
+});
+
+test("a token that can read but not write the gist is reported as a permission problem", async () => {
+  const db = openDb(":memory:");
+  const backup = createBackup(db, {
+    token: "t", gistId: "aaaabbbbccccddddeeeeffff00001111",
+    fetchImpl: async (url, opts = {}) => opts.method === "PATCH"
+      ? { ok: false, status: 404, headers: new Headers({ "x-oauth-scopes": "repo" }) }
+      : { ok: true, json: async () => ({ files: { "upword-backup.json": { content: "{}" } } }) },
+  });
+  await backup.start();
+  assert.equal(backup.isReady(), true);
+  assert.match(backup.status().problem, /cannot write to it \(404\).*"gist" scope.*current scopes: repo/);
 });
