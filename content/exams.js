@@ -4,6 +4,7 @@ import { realB } from "./bank/real-b.js";
 import { conversations } from "./bank/conversations.js";
 import { lectures } from "./bank/lectures.js";
 import { shorts } from "./bank/short.js";
+import { moreListening } from "./bank/more.js";
 import { normalize } from "./grade.js";
 
 const legacy = realListening.map((p) => ({
@@ -11,7 +12,7 @@ const legacy = realListening.map((p) => ({
   questions: p.questions.map((x) => ({ type: "mc", q: x.q, options: x.options, a: x.a })),
 }));
 
-export const bank = [...legacy, ...realA, ...realB, ...conversations, ...lectures, ...shorts];
+export const bank = [...legacy, ...realA, ...realB, ...conversations, ...lectures, ...shorts, ...moreListening];
 export const bankById = new Map(bank.map((t) => [t.id, t]));
 
 // Difficulty -> levels allowed in the pool.

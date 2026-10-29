@@ -177,3 +177,27 @@ test("speaking feedback reports the phrasal verb of the day from the transcript"
     s.server.close();
   }
 });
+
+test("lesson attempts accept any 8 distinct items drawn from the lesson pool", async () => {
+  const { drawLesson, lessonIndex } = await import("../content/index.js");
+  const s = await setup({ available: () => false });
+  const post = async (results) => {
+    const res = await fetch(`${s.base}/lesson`, { method: "POST", headers: { cookie: s.cookie, "content-type": "application/json" }, body: JSON.stringify({ lessonId: "c1-l1", results }) });
+    return { status: res.status, data: await res.json() };
+  };
+  try {
+    const lesson = lessonIndex.get("c1-l1");
+    for (let i = 0; i < 5; i += 1) {
+      const set = drawLesson(lesson);
+      const r = await post(set.map((e) => ({ id: e.id, ok: true })));
+      assert.equal(r.status, 200, JSON.stringify(r.data));
+      assert.equal(r.data.score, 100);
+    }
+    const drawn = drawLesson(lesson);
+    assert.equal((await post(drawn.slice(0, 7).map((e) => ({ id: e.id, ok: true })))).status, 400);
+    assert.equal((await post([...drawn.slice(0, 7), { id: "c9-l1-1", ok: true }].map((e) => ({ id: e.id, ok: true })))).status, 400);
+    assert.equal((await post([...drawn.slice(0, 7), drawn[0]].map((e) => ({ id: e.id, ok: true })))).status, 400);
+  } finally {
+    s.server.close();
+  }
+});

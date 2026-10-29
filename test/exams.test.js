@@ -68,3 +68,15 @@ test("evaluateSpeaking rewards a developed answer over a short one", () => {
   assert.ok(a.overall >= 2.5 && a.overall <= 4);
   assert.equal(evaluateSpeaking("hello", { seconds: 30 }).scores, null);
 });
+
+test("listening bank: every gap-fill answer is spoken in its recording, and B2 has depth", () => {
+  const spoken = (t) => strip(t.text);
+  for (const t of bank) for (const q of t.questions) {
+    if (q.type === "fill") assert.ok(spoken(t).includes(strip(q.answer)), `${t.id}: "${q.answer}" is not in the audio`);
+    if (q.type === "mc") assert.ok(q.a >= 0 && q.a < q.options.length && new Set(q.options).size === q.options.length, `${t.id}: bad options`);
+  }
+  for (const format of ["lecture", "conversation", "monologue", "extract"]) {
+    assert.ok(bank.filter((t) => t.format === format && t.level === "B2").length >= (format === "monologue" ? 7 : 10), `${format} B2 depth`);
+  }
+  assert.ok(bank.length >= 170);
+});

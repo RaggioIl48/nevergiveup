@@ -5,7 +5,7 @@ Plataforma de inglés (B1 → B2, orientada a TOEFL/similares) para un grupo de 
 ## Qué incluye
 
 - Diagnóstico adaptativo (20 preguntas) que estima tu nivel y coloca tu punto de partida.
-- A2→B2 route: 10 units / 30 lessons / 240 exercises, mostly production tasks (mastery = 80 % first try). The whole app is in English.
+- A2→B2 route: 10 units / 30 lessons, each drawing 8 random items from a pool of 16-24 (576 exercises), mostly production tasks (mastery = 80 % first try). The whole app is in English.
 - Labs: 26 speaking prompts, 14 listening clips with real human voices (LibriSpeech / LibriVox readers, CC BY 4.0, openslr.org/12), 18 handwriting prompts.
 - Repaso espaciado de errores, laboratorios de speaking, listening y writing a mano.
 - Cuentas por código de invitación, racha, meta diaria, XP y ranking semanal.
@@ -76,7 +76,7 @@ Practice > Songs: a member pastes a YouTube link and the lyrics; blanks are gene
 
 ## Listening exams and speaking score
 
-Practice > Listening exams: timed TOEFL, IELTS, Cambridge B2 First and Real voices simulations. They draw from a bank of 158 recordings (74 real LibriSpeech voices, CC BY 4.0; 84 conversations, lectures and talks read by the device's synthetic voices), avoid recordings already seen, and play once. Scores are rough estimates, not official results. Speaking is scored automatically from the browser transcript (pace, variety, links, topic); browsers without speech recognition fall back to self-assessment.
+Practice > Listening exams: timed TOEFL, IELTS, Cambridge B2 First and Real voices simulations. They draw from a bank of 176 recordings (74 real LibriSpeech voices, CC BY 4.0; 102 conversations, lectures and talks read by the device's synthetic voices), avoid recordings already seen, and play once. Scores are rough estimates, not official results. Speaking is scored automatically from the browser transcript (pace, variety, links, topic); browsers without speech recognition fall back to self-assessment.
 
 
 ## AI speaking coach
