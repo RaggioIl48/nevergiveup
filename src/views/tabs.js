@@ -4,6 +4,7 @@ import { icon } from "../icons.js";
 import { scene, storyLine } from "../mascot.js";
 import { units, lessonOrder } from "../../content/index.js";
 import { writingPrompts } from "../../content/labs.js";
+import { phrasalOfDay } from "../../content/phrasal-verbs.js";
 
 const MASTERY = 80;
 
@@ -44,6 +45,8 @@ export async function homeView(root, ctx) {
     ? `You have ${me.dueCount} ${me.dueCount === 1 ? "question" : "questions"} due for review.`
     : nextLesson ? `Up next: ${nextLesson.title}.` : "Keep going with your next unlocked lesson."),
     h("a", { class: "key key-primary wide", href: me.dueCount > 0 ? "#/review" : `#/lesson/${nextId}` }, me.dueCount > 0 ? "Start review" : "Start practice")));
+  const pv = phrasalOfDay();
+  root.append(h("a", { class: "pv-tile", href: "#/phrasal" }, h("span", { class: "row-icon" }, icon("BookOpen", 26)), h("span", { class: "row-text" }, h("small", {}, "Phrasal verb of the day"), h("b", {}, pv.pv), h("span", {}, pv.meaning)), icon("ChevronRight", 22)));
   const hasLevel = Boolean(me.user.level);
   const chapter = Math.max(0, units.findIndex((u) => u.lessons.some((l) => l.id === nextId)));
   root.append(h("div", { class: "duo" },
@@ -82,6 +85,7 @@ export async function homeView(root, ctx) {
 export async function practiceView(root, ctx) {
   const me = await ctx.refresh();
   const rows = [
+    ["#/phrasal", "BookOpen", "Phrasal verb of the day", `Today: ${phrasalOfDay().pv}`],
     ["#/speaking", "MessageCircle", "Speaking", "TOEFL/IELTS-style prompts with prep time"],
     ["#/listening", "Headphones", "Listening", "Free practice with real and synthetic voices"],
     ["#/exams", "Headphones", "Listening exams", "Timed TOEFL, IELTS and Cambridge style tests"],
@@ -107,8 +111,13 @@ const SKILL_NAMES = { grammar: "Grammar", vocab: "Vocabulary", reading: "Reading
 export async function meView(root, ctx) {
   const me = await ctx.refresh();
   const { entries } = await api("/writing");
+  const health = await api("/health").catch(() => null);
   const max = Math.max(30, ...me.week.map((d) => d.xp));
+  const saving = health?.backup?.problem
+    ? h("p", { class: "storage-warn", role: "status" }, h("b", {}, "Accounts are not being saved. "), health.backup.problem)
+    : health?.backup?.lastSavedAt ? h("p", { class: "muted storage-ok" }, `Progress saved · ${new Date(health.backup.lastSavedAt).toLocaleString()}`) : "";
   root.append(
+    saving,
     h("h1", { class: "title" }, me.user.name),
     h("p", { class: "muted" }, me.user.level ? `Estimated level: ${me.user.level}` : "Not assessed yet"),
     stats(me),

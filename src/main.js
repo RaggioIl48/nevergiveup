@@ -10,6 +10,8 @@ import { authView } from "./views/auth.js";
 import { homeView, practiceView, rankView, meView } from "./views/tabs.js";
 import { lessonView, diagnosticView, reviewView } from "./views/flows.js";
 import { speakingView, writingView, songsView, songAddView, songView } from "./views/labs.js";
+import { phrasalView } from "./views/phrasal.js";
+import { installLookup } from "./lookup.js";
 import { listeningView, examsView, examView } from "./views/exams.js";
 import { stopSpeaking } from "./audio.js";
 import { loadingScene } from "./mascot.js";
@@ -54,7 +56,7 @@ async function route() {
     return TAB_VIEWS[hash](body, ctx).catch?.((e) => toast(e.message));
   }
   const [, name, arg] = hash.split("/");
-  const full = { lesson: () => lessonView(root, ctx, arg), diagnostic: () => diagnosticView(root, ctx), review: () => reviewView(root, ctx), speaking: () => speakingView(root, ctx), listening: () => listeningView(root, ctx), exams: () => examsView(root, ctx), exam: () => examView(root, ctx, arg), writing: () => writingView(root, ctx), songs: () => songsView(root, ctx), "song-add": () => songAddView(root, ctx), song: () => songView(root, ctx, arg) };
+  const full = { lesson: () => lessonView(root, ctx, arg), diagnostic: () => diagnosticView(root, ctx), review: () => reviewView(root, ctx), speaking: () => speakingView(root, ctx), listening: () => listeningView(root, ctx), exams: () => examsView(root, ctx), exam: () => examView(root, ctx, arg), writing: () => writingView(root, ctx), songs: () => songsView(root, ctx), "song-add": () => songAddView(root, ctx), song: () => songView(root, ctx, arg), phrasal: () => phrasalView(root, ctx) };
   if (full[name]) {
     try { await full[name](); } catch (e) { toast(e.message); ctx.go("#/home"); }
     return;
@@ -63,6 +65,7 @@ async function route() {
 }
 
 window.addEventListener("hashchange", route);
+installLookup();
 window.addEventListener("unauthorized", () => { ctx.me = null; route(); });
 route();
 

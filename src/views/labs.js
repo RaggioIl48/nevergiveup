@@ -7,10 +7,18 @@ import { evaluateSpeaking } from "../../content/speaking-eval.js";
 import { evaluateWriting } from "../writing-eval.js";
 import { buildGaps, isCorrect, DENSITY } from "../../content/songs.js";
 import { loadYouTube } from "../youtube.js";
+import { phrasalOfDay } from "../../content/phrasal-verbs.js";
 
+// Random prompt that skips the ones this device saw recently, so a wide bank actually feels new.
 const pick = (list, avoid) => {
-  const pool = list.filter((x) => x.id !== avoid);
-  return pool[Math.floor(Math.random() * pool.length)];
+  const key = `recent:${String(list[0]?.id || "").replace(/\d+$/, "")}`;
+  let recent = [];
+  try { recent = JSON.parse(localStorage.getItem(key) || "[]"); } catch {}
+  let pool = list.filter((x) => x.id !== avoid && !recent.includes(x.id));
+  if (!pool.length) pool = list.filter((x) => x.id !== avoid);
+  const choice = pool[Math.floor(Math.random() * pool.length)];
+  try { localStorage.setItem(key, JSON.stringify([...recent, choice.id].slice(-Math.min(20, list.length - 1)))); } catch {}
+  return choice;
 };
 const clock = (s) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 
@@ -20,7 +28,15 @@ export function labFrame(root, ctx, title, ...children) {
     h("main", { class: "lab-body" }, children)));
 }
 
+// Result line for the phrasal verb of the day inside the speaking feedback.
+function phrasalResult(p) {
+  const state = !p.used ? "missing" : p.correct ? "ok" : "bad";
+  const title = { ok: `You used “${p.pv}” correctly`, bad: `You used “${p.pv}”, but not quite right`, missing: `You didn’t use “${p.pv}” this time` }[state];
+  return h("div", { class: `phrasal-result ${state}` }, icon(state === "ok" ? "Check" : state === "bad" ? "AlertCircle" : "Info", 20), h("div", {}, h("b", {}, title), p.comment ? h("small", {}, p.comment) : ""));
+}
+
 export async function speakingView(root, ctx) {
+  const today = phrasalOfDay();
   let prompt = pick(speakingPrompts);
   let timer = null;
   let rec = null;
@@ -54,6 +70,7 @@ export async function speakingView(root, ctx) {
         h("h2", {}, `Estimated level: ${r.level}`),
         h("p", { class: "score-big" }, `${r.overall} / 4`),
         r.why?.length ? h("div", { class: "level-why" }, h("h3", {}, "To reach the next level"), h("ul", { class: "notes" }, r.why.map((s) => h("li", {}, s)))) : "",
+        r.phrasal ? phrasalResult(r.phrasal) : "",
         ...Object.entries(r.scores).map(([k, v]) => h("div", { class: "meter" }, h("span", {}, `${label[k]}: ${v}/4`), h("progress", { max: "4", value: String(v) }))),
         r.strengths?.length ? h("div", {}, h("h3", {}, "What worked"), h("ul", { class: "notes" }, r.strengths.map((s) => h("li", {}, s)))) : "",
         r.fixes?.length ? h("div", {}, h("h3", {}, "What to fix"), h("ul", { class: "fixes" }, r.fixes.map((f) => h("li", {},
@@ -77,7 +94,7 @@ export async function speakingView(root, ctx) {
       }
       info.textContent = "Reviewing your answer…";
       try {
-        const res = await api("/speaking/feedback", { prompt: prompt.q, transcript: text, seconds: spoken });
+        const res = await api("/speaking/feedback", { prompt: prompt.q, transcript: text, seconds: spoken, phrasal: today.pv });
         if (res.available) showFeedback(res.feedback, "ai");
         else showFeedback(evaluateSpeaking(text, { seconds: spoken, expected: Math.round(prompt.time * 1.8), promptText: prompt.q, confidence: avgConfidence() }), "local", res.reason);
       } catch (e) {
@@ -120,6 +137,7 @@ export async function speakingView(root, ctx) {
     });
 
     labFrame(root, ctx, "Speaking",
+      h("a", { class: "phrasal-chip", href: "#/phrasal" }, h("small", {}, "Phrasal verb of the day · try to use it"), h("b", {}, today.pv), h("span", {}, today.meaning)),
       h("span", { class: "tag" }, prompt.type),
       h("p", { class: "prompt" }, prompt.q),
       h("p", { class: "tip" }, prompt.tip),
@@ -302,6 +320,7 @@ export async function writingView(root, ctx) {
         feedback.replaceChildren(
           h("h2", {}, `Estimated level: ${ai.level}`),
           h("p", { class: "score-big" }, `${ai.overall} / 4`),
+          ai.why?.length ? h("div", { class: "level-why" }, h("h3", {}, "To reach the next level"), h("ul", { class: "notes" }, ai.why.map((x) => h("li", {}, x)))) : "",
           ...Object.entries(ai.scores).map(([k, v]) => h("div", { class: "meter" }, h("span", {}, `${label[k]}: ${v}/4`), h("progress", { max: "4", value: String(v) }))),
           ai.strengths.length ? h("div", {}, h("h3", {}, "What worked"), h("ul", { class: "notes" }, ai.strengths.map((s) => h("li", {}, s)))) : "",
           ai.fixes.length ? h("div", {}, h("h3", {}, "What to fix"), h("ul", { class: "fixes" }, ai.fixes.map((f) => h("li", {},

@@ -150,3 +150,30 @@ test("calibrateSpeaking keeps inflated AI levels honest", async () => {
   assert.equal(b2.level, "B2");
   assert.equal(calibrateSpeaking({ ...inflated, overall: 1.5, level: "B2" }, { transcript: rich, seconds: 50 }).level, "A2");
 });
+
+test("four-level scale for speaking and writing, and phrasal verb detection", async () => {
+  const { calibrateSpeaking, calibrateWriting, cleanFeedback } = await import("../server/coach.js");
+  const { usesPhrasal, phrasalById } = await import("../content/phrasal-verbs.js");
+  const top = { level: "B2", overall: 3.6, scores: { fluency: 4, vocabulary: 3.5, grammar: 3.5, task: 3.5 } };
+  assert.ok(["A1", "A2", "B1", "B2"].includes(calibrateSpeaking(top, { transcript: "I like it", seconds: 30 }).level));
+  assert.equal(cleanFeedback({ level: "B1+", scores: {} }).level, "B1");
+  const short = calibrateWriting({ level: "B2", overall: 3.5, scores: { task: 4, organisation: 3, vocabulary: 3.5, grammar: 3.5 } }, { text: "I like my city because it is big and the people are nice.", min: 150 });
+  assert.equal(short.level, "A1");
+  assert.ok(short.scores.task <= 1);
+  assert.ok(usesPhrasal("Yesterday I finally gave it up", phrasalById("give up")));
+  assert.ok(usesPhrasal("We are running out of time", phrasalById("run out of")));
+  assert.ok(!usesPhrasal("I gave him a present", phrasalById("give up")));
+});
+
+test("speaking feedback reports the phrasal verb of the day from the transcript", async () => {
+  const s = await setup({ available: () => true, review: async ({ phrasal }) => ({ level: "B1", overall: 2, scores: {}, phrasal: phrasal ? { used: true, correct: true, comment: "Nice." } : undefined }) });
+  try {
+    const used = await s.call({ prompt: "p", transcript: "I think we should cut down on sugar because it is bad for our health", phrasal: "cut down on" });
+    assert.deepEqual(used.data.feedback.phrasal, { pv: "cut down on", used: true, correct: true, comment: "Nice." });
+    const missing = await s.call({ prompt: "p", transcript: "I think technology helps people because we can talk every day", phrasal: "cut down on" });
+    assert.equal(missing.data.feedback.phrasal.used, false);
+    assert.equal(missing.data.feedback.phrasal.correct, false);
+  } finally {
+    s.server.close();
+  }
+});

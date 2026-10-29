@@ -3,10 +3,11 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { timingSafeEqual } from "node:crypto";
 import { hashPassword, verifyPassword, createSession, userFromToken, destroySession, parseCookies, createRateLimiter } from "./auth.js";
-import { lessonIndex, lessonOrder, itemIndex, diagnostic, START_INDEX } from "../content/index.js";
+import { lessonIndex, lessonOrder, itemIndex, diagnostic, START_INDEX, LESSON_SIZE } from "../content/index.js";
 import { levelFromDifficulty } from "../content/grade.js";
 import { validateSong } from "../content/songs.js";
 import { aiCoach, NO_KEY_REASON } from "./coach.js";
+import { phrasalById, usesPhrasal } from "../content/phrasal-verbs.js";
 
 async function youtubeTitle(videoId) {
   try {
@@ -35,7 +36,15 @@ function localDay(offsetMin, shiftDays = 0) {
   return new Date(Date.now() - offsetMin * 60000 - shiftDays * DAY_MS).toISOString().slice(0, 10);
 }
 
-export function createApp(db, { inviteCode, production = false, distDir = "dist", fetchTitle = youtubeTitle, coach = aiCoach, backup = null } = {}) {
+// Free English dictionary (no key). Returns the first definition and example.
+async function freeDictionary(word) {
+  const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`, { signal: AbortSignal.timeout(6000) });
+  if (!res.ok) return null;
+  const def = (await res.json())?.[0]?.meanings?.[0]?.definitions?.[0];
+  return def ? { word, meaning: String(def.definition).slice(0, 160), es: "", example: String(def.example || "").slice(0, 160) } : null;
+}
+
+export function createApp(db, { inviteCode, production = false, distDir = "dist", fetchTitle = youtubeTitle, coach = aiCoach, backup = null, lookupWord = freeDictionary } = {}) {
   const app = express();
   app.get("/api/health", (req, res) => res.json({ ok: true, backup: backup ? backup.status() : { enabled: false } }));
   if (backup) {
@@ -226,9 +235,9 @@ export function createApp(db, { inviteCode, production = false, distDir = "dist"
     const offset = tzOf(req);
     const current = profile(req.user, offset);
     if (!isUnlocked(req.user, current.progress, lesson.id)) return res.status(403).json({ error: "Lesson is locked" });
-    const allowed = new Set(lesson.exercises.map((e) => e.id));
+    const allowed = new Set(lesson.pool.map((e) => e.id));
     const results = cleanResults(req.body?.results, (id) => allowed.has(id));
-    if (!results || results.length !== allowed.size) return res.status(400).json({ error: "Invalid results" });
+    if (!results || results.length !== Math.min(LESSON_SIZE, allowed.size)) return res.status(400).json({ error: "Invalid results" });
     const correct = results.filter((r) => r.ok).length;
     const score = Math.round((correct / results.length) * 100);
     const previous = db.prepare("SELECT best FROM progress WHERE user_id = ? AND lesson_id = ?").get(req.user.id, lesson.id);
@@ -260,7 +269,8 @@ export function createApp(db, { inviteCode, production = false, distDir = "dist"
   const coachUse = new Map();
   app.post("/api/speaking/feedback", requireUser, async (req, res) => {
     if (!coach.available()) return res.json({ available: false, reason: NO_KEY_REASON });
-    const { prompt, transcript, seconds } = req.body || {};
+    const { prompt, transcript, seconds, phrasal } = req.body || {};
+    const target = typeof phrasal === "string" ? phrasalById(phrasal) : null;
     if (typeof prompt !== "string" || typeof transcript !== "string") return res.status(400).json({ error: "Invalid request" });
     const text = transcript.trim().slice(0, 3000);
     if (text.split(/\s+/).length < 8) return res.status(400).json({ error: "Speak a little longer so there is something to review" });
@@ -271,13 +281,39 @@ export function createApp(db, { inviteCode, production = false, distDir = "dist"
     coachUse.set(key, used + 1);
     if (coachUse.size > 5000) coachUse.clear();
     try {
-      const feedback = await coach.review({ prompt: prompt.slice(0, 600), transcript: text, seconds: Math.max(1, Math.min(300, Math.round(Number(seconds) || 30))) });
+      const feedback = await coach.review({ prompt: prompt.slice(0, 600), transcript: text, seconds: Math.max(1, Math.min(300, Math.round(Number(seconds) || 30))), phrasal: target });
+      // The transcript check is the ground truth for "used it at all"; the model judges whether it was used correctly.
+      if (target) {
+        const used = usesPhrasal(text, target);
+        feedback.phrasal = { pv: target.pv, used, correct: used && feedback.phrasal?.correct !== false, comment: feedback.phrasal?.comment || "" };
+      }
       res.json({ available: true, feedback });
     } catch (error) {
       coachUse.set(key, used);
       console.error("speaking feedback failed:", error.message);
       res.json({ available: false, reason: `The AI service failed (${error.message})` });
     }
+  });
+
+  // Word lookup for the hover/long-press dictionary. Cached per word; AI first (meaning in context plus
+  // Spanish), then the free dictionaryapi.dev as a fallback without translation.
+  const definitions = new Map();
+  app.get("/api/define", requireUser, async (req, res) => {
+    const word = String(req.query.w || "").toLowerCase().trim();
+    if (!/^[a-z][a-z'-]{0,30}$/.test(word)) return res.status(400).json({ error: "Invalid word" });
+    if (definitions.has(word)) return res.json(definitions.get(word));
+    const key = `d:${req.user.id}:${new Date().toISOString().slice(0, 10)}`;
+    const used = coachUse.get(key) || 0;
+    if (used >= 300) return res.status(429).json({ error: "Daily dictionary limit reached" });
+    coachUse.set(key, used + 1);
+    const context = String(req.query.c || "").slice(0, 240);
+    let entry = null;
+    if (coach.available() && coach.define) entry = await coach.define({ word, context }).catch(() => null);
+    if (!entry) entry = await lookupWord(word).catch(() => null);
+    if (!entry) return res.status(404).json({ error: "No definition found" });
+    if (definitions.size > 5000) definitions.clear();
+    definitions.set(word, entry);
+    res.json(entry);
   });
 
   app.post("/api/writing/feedback", requireUser, async (req, res) => {
@@ -304,7 +340,7 @@ export function createApp(db, { inviteCode, production = false, distDir = "dist"
 
   app.post("/api/lab", requireUser, (req, res) => {
     const { kind } = req.body || {};
-    const xp = { speaking: 12, listening: 10, song: 10, exam: 30 }[kind];
+    const xp = { speaking: 12, listening: 10, song: 10, exam: 30, phrasal: 8 }[kind];
     if (!xp) return res.status(400).json({ error: "Invalid type" });
     addXp(req.user.id, xp, tzOf(req));
     res.json({ xp });

@@ -1,3 +1,5 @@
+import { EXTRA } from "./units-extra.js";
+
 const ch = (q, options, a, why) => ({ kind: "choice", q, options, a, why });
 const ty = (q, a, why) => ({ kind: "type", q, a: [].concat(a), why });
 const fx = (q, wrong, why) => {
@@ -389,11 +391,15 @@ export const units = unitsRaw.map((unit, ui) => ({
   level: unit.level,
   title: unit.title,
   focus: unit.focus,
-  lessons: unit.lessons.map(([title, exercises], li) => ({
-    id: `c${ui + 1}-l${li + 1}`,
-    title,
-    exercises: exercises.map((ex, ei) => ({ ...ex, id: `c${ui + 1}-l${li + 1}-${ei + 1}` })),
-  })),
+  lessons: unit.lessons.map(([title, exercises], li) => {
+    const id = `c${ui + 1}-l${li + 1}`;
+    const base = exercises.map((ex, ei) => ({ ...ex, id: `${id}-${ei + 1}` }));
+    const extra = (EXTRA[id] || []).map((ex, ei) => ({ ...ex, id: `${id}-${base.length + ei + 1}` }));
+    // exercises: the authored core set; pool: everything a lesson attempt may draw from.
+    return { id, title, exercises: base, pool: [...base, ...extra] };
+  }),
 }));
+
+export const LESSON_SIZE = 8;
 
 export const lessonOrder = units.flatMap((u) => u.lessons.map((l) => l.id));

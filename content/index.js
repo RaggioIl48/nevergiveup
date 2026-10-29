@@ -1,4 +1,4 @@
-import { units, lessonOrder } from "./units.js";
+import { units, lessonOrder, LESSON_SIZE } from "./units.js";
 import { diagnostic } from "./diagnostic.js";
 
 const hash = (s) => [...s].reduce((n, c) => (n * 31 + c.charCodeAt(0)) >>> 0, 7);
@@ -11,11 +11,11 @@ const rotateOptions = (ex) => {
   ex.options = ex.options.map((_, j) => ex.options[(j - k + n) % n]);
   ex.a = (ex.a + k) % n;
 };
-for (const unit of units) for (const lesson of unit.lessons) lesson.exercises.forEach(rotateOptions);
+for (const unit of units) for (const lesson of unit.lessons) lesson.pool.forEach(rotateOptions);
 diagnostic.forEach(rotateOptions);
 
 export const itemIndex = new Map();
-for (const unit of units) for (const lesson of unit.lessons) for (const ex of lesson.exercises) itemIndex.set(ex.id, ex);
+for (const unit of units) for (const lesson of unit.lessons) for (const ex of lesson.pool) itemIndex.set(ex.id, ex);
 for (const ex of diagnostic) itemIndex.set(ex.id, ex);
 
 export const lessonIndex = new Map();
@@ -47,4 +47,19 @@ export const START_INDEX = {
   "B2+": firstB2 + 3,
 };
 
-export { units, lessonOrder, diagnostic };
+export { units, lessonOrder, diagnostic, LESSON_SIZE };
+
+// A fresh set of LESSON_SIZE items for one attempt: shuffled pool, one of each kind first so the mix of
+// exercise types stays varied, then the rest at random.
+export function drawLesson(lesson, size = LESSON_SIZE, random = Math.random) {
+  const pool = [...lesson.pool];
+  for (let i = pool.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  const picked = [];
+  const kinds = new Set();
+  for (const ex of pool) if (!kinds.has(ex.kind) && picked.length < size) { kinds.add(ex.kind); picked.push(ex); }
+  for (const ex of pool) if (!picked.includes(ex) && picked.length < size) picked.push(ex);
+  return picked;
+}

@@ -414,3 +414,48 @@ div.rubric .score-big, .feedback-card .score-big { margin: -8px 0 0; line-height
 .fixes { margin: 0; }
 .level-why { padding: 12px 14px; border-left: 4px solid var(--signal); border-radius: var(--r-sm); background: var(--fill); }
 .level-why h3 { margin-bottom: 6px; }
+.storage-warn { margin: 0; padding: 12px 14px; border-radius: var(--r-sm); background: var(--wrong-soft); color: var(--ink); border-left: 4px solid var(--wrong); font-size: 0.9rem; }
+.storage-ok { font-size: 0.8rem; margin: 0; }
+
+/* Phrasal verb of the day */
+.pv-tile { display: flex; align-items: center; gap: 14px; padding: 12px 14px; background: var(--surface); border: 2px solid var(--line); border-radius: var(--r-lg); color: var(--ink); text-decoration: none; }
+.pv-tile .row-text small { color: var(--signal); font-size: 0.72rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; }
+.pv-tile .row-text b { font-family: var(--font-display); font-size: 1.15rem; }
+.pv-tile .row-text span { color: var(--muted); font-size: 0.875rem; }
+.phrasal-chip { display: flex; flex-direction: column; gap: 2px; padding: 10px 14px; border-radius: var(--r-sm); background: var(--fill); border-left: 4px solid var(--signal); color: var(--ink); text-decoration: none; }
+.phrasal-chip small { color: var(--signal); font-size: 0.72rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; }
+.phrasal-chip b { font-family: var(--font-display); font-size: 1.1rem; }
+.phrasal-chip span { color: var(--muted); font-size: 0.875rem; }
+.pv-card { display: flex; flex-direction: column; gap: 10px; padding: 18px 16px; background: var(--surface); border: 2px solid var(--line); border-radius: var(--r-lg); }
+.pv-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.pv-head small { color: var(--muted); }
+.pv-word { font-family: var(--font-display); font-size: 2rem; line-height: 1.1; margin: 0; color: var(--signal); }
+.pv-meaning { font-size: 1.05rem; margin: 0; }
+.pv-es { margin: 0; color: var(--muted); }
+.pv-example { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: var(--r-sm); background: var(--fill); }
+.pv-example p { flex: 1; margin: 0; font-style: italic; }
+.pv-forms { font-size: 0.85rem; margin: 0; }
+.pv-quiz { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 18px; }
+.pv-q { font-weight: 700; margin: 0 0 8px; }
+.pv-past { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.pv-past li { display: flex; flex-direction: column; padding: 10px 12px; border: 2px solid var(--line); border-radius: var(--r-sm); }
+.pv-past span { color: var(--muted); font-size: 0.875rem; }
+.phrasal-result { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: var(--r-sm); background: var(--fill); }
+.phrasal-result > div { display: flex; flex-direction: column; gap: 2px; }
+.phrasal-result small { color: var(--muted); }
+.phrasal-result.ok { background: var(--correct-soft); color: var(--ink); }
+.phrasal-result.ok svg { color: var(--correct); }
+.phrasal-result.bad { background: var(--wrong-soft); }
+.phrasal-result.bad svg { color: var(--wrong); }
+
+/* Word lookup card */
+.lookup-pop { position: fixed; z-index: 30; display: flex; flex-direction: column; gap: 6px; padding: 10px 12px 12px; background: var(--surface); color: var(--ink); border: 2px solid var(--line); border-radius: var(--r-sm); box-shadow: 0 10px 30px rgb(0 0 0 / 0.35); animation: lookup-in 140ms var(--ease-out, ease-out); }
+.lookup-head { display: flex; align-items: center; gap: 2px; }
+.lookup-head b { flex: 1; font-family: var(--font-display); font-size: 1.1rem; }
+.lookup-head .icon-btn { width: 36px; height: 36px; }
+.lookup-body { display: flex; flex-direction: column; gap: 4px; font-size: 0.9rem; }
+.lookup-body p { margin: 0; }
+.lookup-es { color: var(--signal); font-weight: 800; font-size: 1rem; }
+.lookup-ex { color: var(--muted); font-style: italic; }
+@keyframes lookup-in { from { opacity: 0; transform: translateY(4px) scale(0.98); } }
+@media (prefers-reduced-motion: reduce) { .lookup-pop { animation: none; } }

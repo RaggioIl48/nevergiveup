@@ -1,3 +1,5 @@
+import { SPEAKING_EXTRA, WRITING_EXTRA } from "./labs-extra.js";
+
 export const speakingPrompts = [
   { id: "s1", level: "A2", type: "Personal", prep: 15, time: 30, q: "Describe your typical morning. What do you do from the moment you wake up until you leave home?", tip: "Use the present simple and sequence words: first, then, after that." },
   { id: "s2", level: "A2", type: "Personal", prep: 15, time: 30, q: "Talk about your favourite food. What is it, and when do you usually eat it?", tip: "Use adjectives (tasty, spicy, fresh) and because." },
@@ -56,3 +58,6 @@ export const writingPrompts = [
   { id: "w17", level: "B2", type: "Report", min: 220, q: "Write a short report for your manager recommending one way to improve communication in your team. Describe the current problem, your solution and its possible drawbacks." },
   { id: "w18", level: "B2", type: "Problem-solution essay", min: 280, q: "Many young people struggle to find affordable housing in large cities. What are the causes of this problem and what measures could governments take to solve it?" },
 ];
+
+speakingPrompts.push(...SPEAKING_EXTRA);
+writingPrompts.push(...WRITING_EXTRA);

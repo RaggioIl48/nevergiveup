@@ -25,7 +25,19 @@ export function restoreDb(db, data) {
 }
 
 // Free durable storage: a private GitHub Gist holds a JSON snapshot, because Render's free tier wipes the disk.
+const explain = (status) => ({
+  401: "GitHub rejected the token (401): BACKUP_GITHUB_TOKEN is wrong, expired or revoked",
+  403: "GitHub refused access (403): the token needs the gist permission",
+  404: "Gist not found (404): check BACKUP_GIST_ID and that the token belongs to the gist owner",
+}[status] || `GitHub answered ${status}`);
+
+// Accepts the bare id or a pasted gist URL (gist.github.com/<user>/<id>), and trims stray spaces.
+export const gistIdFrom = (value) => String(value || "").trim().match(/[0-9a-f]{20,}/i)?.[0] || "";
+
 export function createBackup(db, { token = process.env.BACKUP_GITHUB_TOKEN, gistId = process.env.BACKUP_GIST_ID, delayMs = 15000, fetchImpl = fetch } = {}) {
+  token = String(token || "").trim();
+  const configured = Boolean(token || gistId);
+  gistId = gistIdFrom(gistId);
   const enabled = Boolean(token && gistId);
   const headers = { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json", "User-Agent": "upword", "Content-Type": "application/json" };
   let timer = null;
@@ -43,7 +55,7 @@ export function createBackup(db, { token = process.env.BACKUP_GITHUB_TOKEN, gist
     try {
       const body = JSON.stringify({ files: { [FILE]: { content: JSON.stringify(dumpDb(db)) } } });
       const res = await fetchImpl(API + gistId, { method: "PATCH", headers, body });
-      if (!res.ok) throw new Error(`Gist ${res.status}`);
+      if (!res.ok) throw new Error(explain(res.status));
       lastSavedAt = new Date().toISOString();
       lastError = null;
     } catch (error) {
@@ -61,7 +73,7 @@ export function createBackup(db, { token = process.env.BACKUP_GITHUB_TOKEN, gist
     }
     try {
       const res = await fetchImpl(API + gistId, { headers });
-      if (!res.ok) throw new Error(`Gist ${res.status}`);
+      if (!res.ok) throw new Error(explain(res.status));
       const file = (await res.json()).files?.[FILE];
       let restored = false;
       if (file?.content || file?.truncated) {
@@ -80,12 +92,20 @@ export function createBackup(db, { token = process.env.BACKUP_GITHUB_TOKEN, gist
     }
   }
 
+  // Why accounts are not being saved, in words the owner can act on; null when all is well.
+  const problem = () => {
+    if (!configured) return "Backup is off: BACKUP_GITHUB_TOKEN and BACKUP_GIST_ID are not set, so accounts are lost on every restart.";
+    if (!token) return "BACKUP_GITHUB_TOKEN is missing.";
+    if (!gistId) return "BACKUP_GIST_ID is not a gist id (copy the long code at the end of the gist address).";
+    return lastError;
+  };
+
   return {
     enabled,
     save,
     restoreIfEmpty,
     isReady: () => ready,
-    status: () => ({ enabled, ready, lastSavedAt, lastError }),
+    status: () => ({ enabled, ready, lastSavedAt, lastError, problem: problem() }),
     markDirty() {
       if (!enabled) return;
       dirty = true;
@@ -93,8 +113,17 @@ export function createBackup(db, { token = process.env.BACKUP_GITHUB_TOKEN, gist
     },
     // Retries the restore until it works, so a GitHub hiccup at boot never loses the accounts.
     async start({ retryMs = 30000 } = {}) {
+      if (!enabled) {
+        if (configured) console.error("Backup disabled:", problem());
+        return;
+      }
       await restoreIfEmpty();
-      if (ready) return;
+      if (ready) {
+        // Write once at boot so a token without permission shows up now, not after someone signs up.
+        dirty = true;
+        await save();
+        return;
+      }
       const retry = setInterval(async () => {
         await restoreIfEmpty();
         if (ready) {

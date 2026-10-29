@@ -38,7 +38,7 @@ test("levelFromDifficulty thresholds", () => {
 
 test("content: ids unique and answers valid", () => {
   const seen = new Set();
-  const all = [...diagnostic, ...units.flatMap((u) => u.lessons.flatMap((l) => l.exercises))];
+  const all = [...diagnostic, ...units.flatMap((u) => u.lessons.flatMap((l) => l.pool))];
   for (const ex of all) {
     assert.ok(!seen.has(ex.id), `duplicate ${ex.id}`);
     seen.add(ex.id);
@@ -78,4 +78,19 @@ test("content: A2→B2 route and lab banks keep their structure", () => {
   assert.equal(START_INDEX.B2, 18);
   for (const prompt of speakingPrompts) assert.ok(prompt.q && prompt.tip && prompt.prep > 0 && prompt.time > 0, prompt.id);
   for (const prompt of writingPrompts) assert.ok(prompt.q && prompt.min >= 100, prompt.id);
+});
+
+test("every lesson has a deep pool and each attempt draws a varied random set", async () => {
+  const { drawLesson, LESSON_SIZE } = await import("../content/index.js");
+  for (const u of units) for (const l of u.lessons) assert.ok(l.pool.length >= 16, `${l.id} pool`);
+  const lesson = units[0].lessons[0];
+  const sets = new Set();
+  for (let i = 0; i < 20; i += 1) {
+    const set = drawLesson(lesson);
+    assert.equal(set.length, LESSON_SIZE);
+    assert.equal(new Set(set.map((e) => e.id)).size, LESSON_SIZE);
+    assert.ok(new Set(set.map((e) => e.kind)).size >= 5, "mix of kinds");
+    sets.add(set.map((e) => e.id).sort().join());
+  }
+  assert.ok(sets.size > 10, "attempts differ");
 });

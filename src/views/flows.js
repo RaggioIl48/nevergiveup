@@ -3,7 +3,7 @@ import { h, mount } from "../dom.js";
 import { icon } from "../icons.js";
 import { scene } from "../mascot.js";
 import { runPlayer, lessonSource, diagnosticSource } from "./player.js";
-import { lessonIndex, itemIndex, diagnostic, lessonOrder } from "../../content/index.js";
+import { lessonIndex, itemIndex, diagnostic, lessonOrder, drawLesson } from "../../content/index.js";
 import { DIAGNOSTIC_LENGTH } from "../../content/diagnostic.js";
 
 function resultScreen(root, { title, lines, primary, secondary, tone = "good" }) {
@@ -17,7 +17,7 @@ function resultScreen(root, { title, lines, primary, secondary, tone = "good" })
 export async function lessonView(root, ctx, id) {
   const lesson = lessonIndex.get(id);
   if (!lesson) return ctx.go("#/home");
-  const source = lessonSource(lesson.exercises);
+  const source = lessonSource(drawLesson(lesson));
   const exit = () => ctx.go("#/home");
   runPlayer({
     root, source, onExit: exit,
