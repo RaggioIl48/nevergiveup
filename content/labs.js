@@ -1,4 +1,5 @@
 import { SPEAKING_EXTRA, WRITING_EXTRA } from "./labs-extra.js";
+import { SPEAKING_EXAM } from "./speaking-exam.js";
 
 export const speakingPrompts = [
   { id: "s1", level: "A2", type: "Personal", prep: 15, time: 30, q: "Describe your typical morning. What do you do from the moment you wake up until you leave home?", tip: "Use the present simple and sequence words: first, then, after that." },
@@ -59,5 +60,7 @@ export const writingPrompts = [
   { id: "w18", level: "B2", type: "Problem-solution essay", min: 280, q: "Many young people struggle to find affordable housing in large cities. What are the causes of this problem and what measures could governments take to solve it?" },
 ];
 
-speakingPrompts.push(...SPEAKING_EXTRA);
+speakingPrompts.push(...SPEAKING_EXTRA, ...SPEAKING_EXAM);
+// The older TOEFL-style tasks count as exam practice too.
+for (const p of speakingPrompts) if (!p.exam && /Independent|Integrated/.test(p.type)) p.exam = "TOEFL";
 writingPrompts.push(...WRITING_EXTRA);

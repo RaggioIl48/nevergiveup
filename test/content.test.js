@@ -82,7 +82,7 @@ test("content: A2→B2 route and lab banks keep their structure", () => {
 
 test("every lesson has a deep pool and each attempt draws a varied random set", async () => {
   const { drawLesson, LESSON_SIZE } = await import("../content/index.js");
-  for (const u of units) for (const l of u.lessons) assert.ok(l.pool.length >= 16, `${l.id} pool`);
+  for (const u of units) for (const l of u.lessons) assert.ok(l.pool.length >= 24, `${l.id} pool`);
   const lesson = units[0].lessons[0];
   const sets = new Set();
   for (let i = 0; i < 20; i += 1) {
@@ -93,4 +93,15 @@ test("every lesson has a deep pool and each attempt draws a varied random set", 
     sets.add(set.map((e) => e.id).sort().join());
   }
   assert.ok(sets.size > 10, "attempts differ");
+});
+
+test("speaking bank: exam-format prompts are the majority from B1", () => {
+  const exam = speakingPrompts.filter((p) => p.exam);
+  assert.ok(exam.length >= 60, `exam prompts: ${exam.length}`);
+  for (const kind of ["IELTS Part 1", "IELTS Part 2", "IELTS Part 3", "TOEFL Independent", "TOEFL Integrated", "TOEFL Interview"]) {
+    assert.ok(speakingPrompts.some((p) => p.type === kind), kind);
+  }
+  const b1up = speakingPrompts.filter((p) => p.level !== "A2");
+  assert.ok(exam.length / b1up.length > 0.6, "most B1+ prompts follow an exam format");
+  for (const p of speakingPrompts.filter((x) => x.type === "IELTS Part 2")) assert.ok(p.prep === 60 && p.time === 120 && p.q.includes("You should say"), p.id);
 });

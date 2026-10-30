@@ -37,7 +37,13 @@ function phrasalResult(p) {
 
 export async function speakingView(root, ctx) {
   const today = phrasalOfDay();
-  let prompt = pick(speakingPrompts);
+  // From B1 the default is exam-format practice (IELTS and TOEFL); A2 learners start with everything.
+  const MODES = { exam: "Exam style", IELTS: "IELTS", TOEFL: "TOEFL", all: "All" };
+  const examLevel = ["B1", "B1+", "B2", "B2+"].includes(ctx.me?.user?.level);
+  let mode = "all";
+  try { mode = localStorage.getItem("speaking-mode") || (examLevel ? "exam" : "all"); } catch { mode = examLevel ? "exam" : "all"; }
+  const poolFor = (m) => (m === "all" ? speakingPrompts : speakingPrompts.filter((p) => (m === "exam" ? p.exam : p.exam === m)));
+  let prompt = pick(poolFor(mode));
   let timer = null;
   let rec = null;
   const cleanup = () => { clearInterval(timer); rec?.stop(); rec = null; };
@@ -131,18 +137,22 @@ export async function speakingView(root, ctx) {
       else if (phase === "done") {
         main.disabled = true;
         try { const res = await api("/lab", { kind: "speaking", ref: prompt.id }); toast(`+${res.xp} XP`); } catch (e) { toast(e.message); }
-        prompt = pick(speakingPrompts, prompt.id);
+        prompt = pick(poolFor(mode), prompt.id);
         render();
       }
     });
 
     labFrame(root, ctx, "Speaking",
       h("a", { class: "phrasal-chip", href: "#/phrasal" }, h("small", {}, "Phrasal verb of the day · try to use it"), h("b", {}, today.pv), h("span", {}, today.meaning)),
+      h("div", { class: "tags mode-tags", role: "group", "aria-label": "Prompt type" }, Object.entries(MODES).map(([key, label]) => h("button", {
+        class: "tag chip-btn", type: "button", "aria-pressed": String(key === mode),
+        onClick: () => { mode = key; try { localStorage.setItem("speaking-mode", key); } catch {} prompt = pick(poolFor(mode)); render(); },
+      }, label))),
       h("span", { class: "tag" }, prompt.type),
       h("p", { class: "prompt" }, prompt.q),
       h("p", { class: "tip" }, prompt.tip),
       clockEl, main, info, transcript, again, rubricBox,
-      h("button", { class: "link", type: "button", onClick: () => { prompt = pick(speakingPrompts, prompt.id); render(); } }, "Another prompt"));
+      h("button", { class: "link", type: "button", onClick: () => { prompt = pick(poolFor(mode), prompt.id); render(); } }, "Another prompt"));
   };
   render();
 }
@@ -199,7 +209,9 @@ export async function songView(root, ctx, id) {
   const cleanup = () => { try { player?.destroy(); } catch { /* player already gone */ } player = null; };
   window.addEventListener("hashchange", cleanup, { once: true });
 
-  const stage = h("div", { class: "yt-frame" }, h("div", { id: "yt-target" }));
+  // Audio first: a small video in a sticky bar, so play/pause stays at hand while typing the lyrics.
+  const stage = h("div", { class: "yt-mini" }, h("div", { id: "yt-target" }));
+  const tapHint = h("p", { class: "player-hint", hidden: true }, "On iPhone, tap the video once to start it.");
   const fallback = h("p", { class: "muted", hidden: true }, "This video cannot be played here. ", h("a", { class: "link", href: `https://www.youtube.com/watch?v=${song.videoId}`, target: "_blank", rel: "noopener" }, "Open it on YouTube"));
   const speeds = [1, 0.75, 0.5];
   let speedIndex = 0;
@@ -209,10 +221,14 @@ export async function songView(root, ctx, id) {
     speedBtn.textContent = `${speeds[speedIndex]}×`;
   } }, "1×");
   const back = h("button", { class: "key key-quiet", type: "button", "aria-label": "Back 5 seconds", onClick: () => player?.seekTo?.(Math.max(0, (player.getCurrentTime?.() || 0) - 5), true) }, icon("RotateCcw", 20), "5s");
+  const toggleLabel = h("span", {}, "Play");
   const toggle = h("button", { class: "key key-info", type: "button", onClick: () => {
     if (!player?.getPlayerState) return;
-    if (player.getPlayerState() === 1) player.pauseVideo(); else player.playVideo();
-  } }, icon("Play", 22), "Play / pause");
+    if (player.getPlayerState() === 1) return player.pauseVideo();
+    player.playVideo();
+    // iOS only lets a video start from a tap on the video itself; if nothing happens, say so.
+    setTimeout(() => { if (player?.getPlayerState?.() !== 1) tapHint.hidden = false; }, 1500);
+  } }, icon("Play", 20), toggleLabel);
 
   const lyricsBox = h("div", { class: "lyrics" });
   const score = h("p", { class: "muted", "aria-live": "polite" });
@@ -264,8 +280,9 @@ export async function songView(root, ctx, id) {
   } }, "Delete this song") : null;
 
   renderLyrics();
-  labFrame(root, ctx, song.title, stage, fallback,
-    h("div", { class: "audio-row" }, toggle, back, speedBtn),
+  labFrame(root, ctx, song.title,
+    h("div", { class: "player-bar" }, stage, h("div", { class: "player-controls" }, toggle, h("div", { class: "player-row" }, back, speedBtn))),
+    tapHint, fallback,
     h("p", { class: "muted" }, `${song.level} · added by ${song.addedBy}. Song lyrics can be hard to hear, and they are not always correct English.`),
     h("fieldset", { class: "rubric" }, h("legend", {}, "Blanks"), h("div", { class: "rate" }, levels)),
     lyricsBox, score,
@@ -275,8 +292,11 @@ export async function songView(root, ctx, id) {
     const YT = await loadYouTube();
     player = new YT.Player("yt-target", {
       videoId: song.videoId, host: "https://www.youtube-nocookie.com",
-      playerVars: { playsinline: 1, rel: 0, modestbranding: 1, origin: location.origin },
-      events: { onError: () => { fallback.hidden = false; } },
+      playerVars: { playsinline: 1, rel: 0, fs: 0, iv_load_policy: 3, origin: location.origin },
+      events: {
+        onError: () => { fallback.hidden = false; },
+        onStateChange: (e) => { toggleLabel.textContent = e.data === 1 ? "Pause" : "Play"; if (e.data === 1) tapHint.hidden = true; },
+      },
     });
   } catch {
     fallback.hidden = false;

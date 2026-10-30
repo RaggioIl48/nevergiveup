@@ -115,8 +115,8 @@ export function calibrateSpeaking(feedback, { transcript = "", seconds = 0 } = {
   const wpm = seconds >= 15 ? Math.round((n / seconds) * 60) : null;
   const caps = [];
   const cap = (level, reason) => caps.push({ level, reason });
-  // Word targets are set for a 45-second answer and scale with the speaking time (30-60 s prompts).
-  const scale = Math.max(0.67, Math.min(1.33, (seconds || 45) / 45));
+  // Word targets are set for a 45-second answer and scale with the speaking time (30 s up to the 2-minute IELTS Part 2).
+  const scale = Math.max(0.67, Math.min(2.7, (seconds || 45) / 45));
   const [a2, b1, b2] = [18, 35, 70].map((x) => Math.round(x * scale));
   if (n < a2) cap("A1", `You said ${n} words; an A2 answer usually has at least ${a2}.`);
   else if (n < b1) cap("A2", `You said ${n} words; a B1 answer usually has at least ${b1}.`);

@@ -62,7 +62,7 @@ export function createApp(db, { inviteCode, production = false, distDir = "dist"
     res.set({
       "X-Content-Type-Options": "nosniff",
       "Referrer-Policy": "same-origin",
-      "Content-Security-Policy": "default-src 'self'; script-src 'self' https://www.youtube.com; frame-src https://www.youtube-nocookie.com; img-src 'self' data: blob:; media-src 'self' blob:; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self' https://www.youtube.com; frame-src https://www.youtube-nocookie.com https://www.youtube.com; img-src 'self' data: blob: https://i.ytimg.com; media-src 'self' blob:; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'",
     });
     next();
   });
