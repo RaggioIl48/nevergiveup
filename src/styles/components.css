@@ -478,3 +478,50 @@ div.rubric .score-big, .feedback-card .score-big { margin: -8px 0 0; line-height
 .player-row .key { flex: 1; }
 .player-hint { margin: 0; padding: 8px 12px; border-radius: var(--r-sm); background: var(--info-soft); font-size: 0.85rem; }
 @media (max-width: 380px) { .yt-mini { width: 140px; } }
+
+/* Home hierarchy: the suggested session leads; everything else is compact. */
+.stats { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.stats .goal { flex-basis: 100%; order: 3; }
+.stats .chip { padding: 6px 10px; font-size: 0.9rem; }
+.save-slot { margin-left: auto; min-width: 0; }
+.save-pill { padding: 4px 10px; font-size: 0.75rem; gap: 4px; }
+.focus-card { gap: 10px; padding: 22px 20px; border-color: var(--signal); box-shadow: 0 var(--lip) 0 var(--signal-lip); }
+.focus-card h2 { font-size: 1.4rem; line-height: 1.2; }
+.focus-card .key { min-height: 60px; font-size: 1.05rem; }
+.pv-tile { gap: 8px; padding: 10px 12px; border-radius: var(--r-sm); font-size: 0.9rem; }
+.pv-tile svg:first-child { color: var(--signal); flex: none; }
+.pv-tile small { color: var(--muted); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; }
+.pv-tile b { flex: 1; min-width: 0; font-family: var(--font-display); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pv-tile svg:last-child { color: var(--muted); flex: none; }
+.duo { gap: 8px; }
+.tile { padding: 9px 12px; border-radius: var(--r-sm); }
+.tile small { font-size: 0.68rem; }
+.tile b { font-size: 0.88rem; }
+.story-card { padding: 8px 12px; }
+.story-card .scene { width: 80px; }
+.story-card p { font-size: 0.84rem; }
+
+/* Songs: categories, video check, blocked video */
+.song-filter { flex-wrap: wrap; }
+.song-filter .chip-btn { padding: 4px 12px; min-height: 40px; }
+.song-groups { display: flex; flex-direction: column; gap: 18px; }
+.song-group .rows { margin-top: 8px; }
+.song-row { min-height: 64px; }
+.song-level { display: grid; place-items: center; flex: none; width: 44px; height: 44px; border-radius: var(--r-sm); font-weight: 800; font-size: 0.85rem; background: var(--fill); }
+.song-level.lvl-A2 { color: var(--correct); }
+.song-level.lvl-B1 { color: var(--info); }
+.song-level.lvl-B2 { color: var(--wrong); }
+.yt-probe { position: fixed; left: -10000px; top: 0; width: 200px; height: 113px; pointer-events: none; }
+.video-check { display: flex; gap: 8px; align-items: flex-start; margin: 6px 0 0; padding: 10px 12px; border-radius: var(--r-sm); background: var(--fill); font-size: 0.9rem; }
+.video-check.ok { background: var(--correct-soft); }
+.video-check.ok svg { color: var(--correct); flex: none; }
+.video-check.bad { background: var(--wrong-soft); }
+.video-check.bad svg { color: var(--wrong); flex: none; margin-top: 2px; }
+.video-blocked { display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: var(--r-lg); background: var(--wrong-soft); border: 2px solid var(--wrong); }
+.video-blocked p { margin: 0; }
+.video-blocked .key { flex: 1; min-height: 48px; font-size: 0.85rem; }
+.swap-video { display: flex; flex-direction: column; gap: 8px; }
+.small { font-size: 0.85rem; }
+
+.lab-body .audio-row { flex-wrap: wrap; }
+.lab-body .audio-row > .key { flex: 1 1 auto; }

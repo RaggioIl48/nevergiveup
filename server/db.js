@@ -61,5 +61,7 @@ export function openDb(file = process.env.DB_FILE || "data/upword.db") {
       created_at INTEGER NOT NULL
     );
   `);
+  // Older databases (and restored backups) predate song genres.
+  if (!db.prepare("PRAGMA table_info(songs)").all().some((c) => c.name === "genre")) db.exec("ALTER TABLE songs ADD COLUMN genre TEXT NOT NULL DEFAULT 'Other'");
   return db;
 }

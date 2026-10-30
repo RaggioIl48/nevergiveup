@@ -5,7 +5,7 @@ import { speak, stopSpeaking, listen, canListen } from "../audio.js";
 import { speakingPrompts, writingPrompts } from "../../content/labs.js";
 import { evaluateSpeaking } from "../../content/speaking-eval.js";
 import { evaluateWriting } from "../writing-eval.js";
-import { buildGaps, isCorrect, DENSITY } from "../../content/songs.js";
+import { buildGaps, isCorrect, DENSITY, SONG_LEVELS, SONG_GENRES, parseVideoId } from "../../content/songs.js";
 import { loadYouTube } from "../youtube.js";
 import { phrasalOfDay } from "../../content/phrasal-verbs.js";
 
@@ -157,33 +157,122 @@ export async function speakingView(root, ctx) {
   render();
 }
 
+const LEVEL_NAMES = { A2: "Easy", B1: "Medium", B2: "Hard" };
+const searchUrl = (q) => `https://www.youtube.com/results?search_query=${encodeURIComponent(`${q} lyrics`)}`;
+
+// Tries the video in a hidden, muted player: resolves "ok" once it actually plays, "blocked" (owner forbids
+// embedding), "missing", or "unknown" if YouTube never answers. "Ready" alone proves nothing: errors only appear on play.
+// Lets members fix a link before saving instead of finding out on an iPhone later.
+function probeVideo(videoId) {
+  return new Promise((resolve) => {
+    const holder = h("div", { class: "yt-probe", "aria-hidden": "true" }, h("div", { id: `probe-${videoId}` }));
+    document.body.append(holder);
+    let player = null;
+    const done = (result) => { try { player?.destroy(); } catch { /* gone */ } holder.remove(); resolve(result); };
+    const timer = setTimeout(() => done("unknown"), 9000);
+    loadYouTube().then((YT) => {
+      player = new YT.Player(`probe-${videoId}`, {
+        videoId, host: "https://www.youtube-nocookie.com",
+        playerVars: { playsinline: 1, origin: location.origin },
+        events: {
+          onReady: (e) => { e.target.mute(); e.target.playVideo(); },
+          onStateChange: (e) => { if (e.data === 1) { clearTimeout(timer); done("ok"); } },
+          onError: (e) => { clearTimeout(timer); done([100, 2].includes(e.data) ? "missing" : "blocked"); },
+        },
+      });
+    }).catch(() => { clearTimeout(timer); done("unknown"); });
+  });
+}
+
 export async function songsView(root, ctx) {
   const { songs } = await api("/songs");
+  let level = "all";
+  let genre = "all";
+  try { level = sessionStorage.getItem("songs-level") || "all"; genre = sessionStorage.getItem("songs-genre") || "all"; } catch { /* defaults */ }
+  const list = h("div", { class: "song-groups" });
+  const genresUsed = SONG_GENRES.filter((g) => songs.some((s) => (s.genre || "Other") === g));
+
+  const chip = (label, active, onClick) => h("button", { class: "tag chip-btn", type: "button", "aria-pressed": String(active), onClick }, label);
+  const levelChips = h("div", { class: "tags song-filter", role: "group", "aria-label": "Difficulty" });
+  const genreChips = h("div", { class: "tags song-filter", role: "group", "aria-label": "Genre" });
+
+  const row = (s) => h("li", {}, h("a", { class: "row song-row", href: `#/song/${s.id}` },
+    h("span", { class: `song-level lvl-${s.level}` }, s.level),
+    h("span", { class: "row-text" }, h("b", {}, s.title), h("small", {}, `${s.genre || "Other"} · added by ${s.addedBy}`)),
+    icon("ChevronRight", 22)));
+
+  const render = () => {
+    try { sessionStorage.setItem("songs-level", level); sessionStorage.setItem("songs-genre", genre); } catch { /* not kept */ }
+    levelChips.replaceChildren(chip("All levels", level === "all", () => { level = "all"; render(); }),
+      ...SONG_LEVELS.map((l) => chip(`${LEVEL_NAMES[l]} · ${l}`, level === l, () => { level = l; render(); })));
+    genreChips.replaceChildren(chip("All genres", genre === "all", () => { genre = "all"; render(); }),
+      ...genresUsed.map((g) => chip(g, genre === g, () => { genre = g; render(); })));
+    genreChips.hidden = genresUsed.length < 2;
+    const shown = songs.filter((s) => (level === "all" || s.level === level) && (genre === "all" || (s.genre || "Other") === genre));
+    if (!songs.length) return list.replaceChildren(h("p", { class: "muted" }, "No songs yet. Add the first one!"));
+    if (!shown.length) return list.replaceChildren(h("p", { class: "muted" }, "No songs match these filters yet."));
+    list.replaceChildren(...SONG_LEVELS.map((l) => {
+      const group = shown.filter((s) => s.level === l);
+      return group.length ? h("section", { class: "song-group" },
+        h("div", { class: "section-head" }, h("h2", {}, `${LEVEL_NAMES[l]} · ${l}`), h("span", {}, `${group.length} ${group.length === 1 ? "song" : "songs"}`)),
+        h("ul", { class: "rows" }, group.map(row))) : "";
+    }));
+  };
+  render();
+
   labFrame(root, ctx, "Songs",
-    h("p", { class: "tip" }, "Listen to a real song and fill in the missing words. Pick the video, paste the lyrics, and the blanks are made for you."),
+    h("p", { class: "tip" }, "Listen and fill in the missing words. Easy songs are slow and clear; hard ones are fast or full of slang."),
     h("a", { class: "key key-primary wide", href: "#/song-add" }, "Add a song"),
-    songs.length
-      ? h("ul", { class: "rows" }, songs.map((s) => h("li", {}, h("a", { class: "row", href: `#/song/${s.id}` },
-        h("span", { class: "row-icon" }, icon("Headphones", 28)),
-        h("span", { class: "row-text" }, h("b", {}, s.title), h("small", {}, `${s.level} · added by ${s.addedBy}`)),
-        icon("ChevronRight", 22)))))
-      : h("p", { class: "muted" }, "No songs yet. Add the first one!"));
+    levelChips, genreChips, list);
 }
 
 export async function songAddView(root, ctx) {
   const url = h("input", { class: "answer-input", type: "url", inputmode: "url", autocapitalize: "none", autocorrect: "off", placeholder: "https://www.youtube.com/watch?v=…", "aria-label": "YouTube link" });
   const title = h("input", { class: "answer-input", type: "text", maxlength: "80", placeholder: "Leave empty to use the video title", "aria-label": "Title (optional)" });
   const lyrics = h("textarea", { class: "answer-input", rows: "10", placeholder: "Paste the lyrics here, one line per row.\nTip: put {braces} around a word to force it to be a blank.", "aria-label": "Lyrics" });
+  const check = h("p", { class: "video-check", hidden: true, "aria-live": "polite" });
   let level = "B1";
-  const chips = ["A2", "B1", "B2"].map((l) => h("button", { class: "tag chip-btn", type: "button", "aria-pressed": String(l === level), onClick: () => {
-    level = l; chips.forEach((c) => c.setAttribute("aria-pressed", String(c.textContent === l)));
-  } }, l));
+  let genre = "Pop";
+  let probed = "";
+  const chips = SONG_LEVELS.map((l) => h("button", { class: "tag chip-btn", type: "button", "aria-pressed": String(l === level), onClick: () => {
+    level = l; chips.forEach((c) => c.setAttribute("aria-pressed", String(c.dataset.level === l)));
+  }, dataset: { level: l } }, `${LEVEL_NAMES[l]} · ${l}`));
+  const genreChips = SONG_GENRES.map((g) => h("button", { class: "tag chip-btn", type: "button", "aria-pressed": String(g === genre), onClick: () => {
+    genre = g; genreChips.forEach((c) => c.setAttribute("aria-pressed", String(c.textContent === g)));
+  } }, g));
+
+  const testLink = async () => {
+    const id = parseVideoId(url.value);
+    if (!id || id === probed) return;
+    probed = id;
+    check.hidden = false;
+    check.className = "video-check";
+    check.replaceChildren("Checking that this video can play inside the app…");
+    const result = await probeVideo(id);
+    if (probed !== id) return;
+    if (result === "unknown") {
+      check.className = "video-check";
+      check.replaceChildren("Could not check this video right now. You can still save it.");
+    } else if (result === "ok") {
+      check.className = "video-check ok";
+      check.replaceChildren(icon("Check", 18), "This video plays inside the app.");
+    } else {
+      check.className = "video-check bad";
+      check.replaceChildren(icon("AlertCircle", 18), h("span", {},
+        "This video can’t play inside the app: it is private, removed, or its owner only allows it on YouTube (common with official music videos). ",
+        h("a", { class: "link", href: searchUrl(title.value || "song"), target: "_blank", rel: "noopener" }, "Find a lyrics or audio version"),
+        " and paste that link instead."));
+    }
+  };
+  url.addEventListener("change", testLink);
+  url.addEventListener("blur", testLink);
+
   const error = h("p", { class: "form-error", hidden: true, role: "alert" });
   const save = h("button", { class: "key key-primary wide", type: "button", onClick: async () => {
     error.hidden = true;
     save.disabled = true;
     try {
-      const res = await api("/songs", { url: url.value, title: title.value, level, lyrics: lyrics.value });
+      const res = await api("/songs", { url: url.value, title: title.value, level, genre, lyrics: lyrics.value });
       ctx.go(`#/song/${res.id}`);
     } catch (e) {
       error.textContent = e.message;
@@ -192,9 +281,11 @@ export async function songAddView(root, ctx) {
     }
   } }, "Save song");
   labFrame(root, ctx, "Add a song",
-    h("label", { class: "field-label" }, "YouTube link"), url,
+    h("label", { class: "field-label" }, "YouTube link"), url, check,
+    h("p", { class: "muted small" }, "Tip: lyrics videos and audio uploads usually play inside the app; official music videos often don't."),
     h("label", { class: "field-label" }, "Title (optional)"), title,
     h("fieldset", { class: "q" }, h("legend", {}, "How hard is the singing?"), h("div", { class: "tags" }, chips)),
+    h("fieldset", { class: "q" }, h("legend", {}, "Genre"), h("div", { class: "tags song-filter" }, genreChips)),
     h("label", { class: "field-label" }, "Lyrics"), lyrics,
     h("p", { class: "muted" }, "Lyrics stay on this server and are only visible to signed-in members. Only add what your group may use."),
     error, save);
@@ -212,7 +303,16 @@ export async function songView(root, ctx, id) {
   // Audio first: a small video in a sticky bar, so play/pause stays at hand while typing the lyrics.
   const stage = h("div", { class: "yt-mini" }, h("div", { id: "yt-target" }));
   const tapHint = h("p", { class: "player-hint", hidden: true }, "On iPhone, tap the video once to start it.");
-  const fallback = h("p", { class: "muted", hidden: true }, "This video cannot be played here. ", h("a", { class: "link", href: `https://www.youtube.com/watch?v=${song.videoId}`, target: "_blank", rel: "noopener" }, "Open it on YouTube"));
+  // Explain a blocked video and let the owner swap it without retyping the lyrics.
+  const newUrl = h("input", { class: "answer-input", type: "url", inputmode: "url", autocapitalize: "none", autocorrect: "off", placeholder: "Paste a lyrics or audio version link", "aria-label": "New YouTube link" });
+  const fallback = h("div", { class: "video-blocked", hidden: true, role: "status" },
+    h("p", {}, h("b", {}, "This video can’t play inside the app. "), "It is private, removed, or its owner only allows it on YouTube (common with official music videos)."),
+    h("div", { class: "audio-row" },
+      h("a", { class: "key key-quiet", href: searchUrl(song.title), target: "_blank", rel: "noopener" }, "Find a playable version"),
+      h("a", { class: "key key-quiet", href: `https://www.youtube.com/watch?v=${song.videoId}`, target: "_blank", rel: "noopener" }, "Open on YouTube")),
+    song.mine ? h("div", { class: "swap-video" }, newUrl, h("button", { class: "key key-primary", type: "button", onClick: async () => {
+      try { await api(`/songs/${song.id}/update`, { url: newUrl.value }); toast("Video updated"); cleanup(); songView(root, ctx, id); } catch (e) { toast(e.message); }
+    } }, "Use this video")) : h("p", { class: "muted small" }, `Ask ${song.addedBy} to swap it for a lyrics version.`));
   const speeds = [1, 0.75, 0.5];
   let speedIndex = 0;
   const speedBtn = h("button", { class: "key key-quiet", type: "button", "aria-label": "Playback speed", onClick: () => {
@@ -282,8 +382,8 @@ export async function songView(root, ctx, id) {
   renderLyrics();
   labFrame(root, ctx, song.title,
     h("div", { class: "player-bar" }, stage, h("div", { class: "player-controls" }, toggle, h("div", { class: "player-row" }, back, speedBtn))),
-    tapHint, fallback,
-    h("p", { class: "muted" }, `${song.level} · added by ${song.addedBy}. Song lyrics can be hard to hear, and they are not always correct English.`),
+    fallback, tapHint,
+    h("p", { class: "muted" }, `${LEVEL_NAMES[song.level] || ""} · ${song.level} · ${song.genre || "Other"} · added by ${song.addedBy}. Song lyrics can be hard to hear, and they are not always correct English.`),
     h("fieldset", { class: "rubric" }, h("legend", {}, "Blanks"), h("div", { class: "rate" }, levels)),
     lyricsBox, score,
     h("div", { class: "audio-row" }, check, reveal, retry), remove);
@@ -294,7 +394,7 @@ export async function songView(root, ctx, id) {
       videoId: song.videoId, host: "https://www.youtube-nocookie.com",
       playerVars: { playsinline: 1, rel: 0, fs: 0, iv_load_policy: 3, origin: location.origin },
       events: {
-        onError: () => { fallback.hidden = false; },
+        onError: () => { fallback.hidden = false; tapHint.hidden = true; },
         onStateChange: (e) => { toggleLabel.textContent = e.data === 1 ? "Pause" : "Play"; if (e.data === 1) tapHint.hidden = true; },
       },
     });

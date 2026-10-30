@@ -2,6 +2,7 @@
 import { normalize } from "./grade.js";
 
 export const SONG_LEVELS = ["A2", "B1", "B2"];
+export const SONG_GENRES = ["Pop", "Rock", "Ballad", "Hip-hop", "R&B", "Latin", "Country", "Electronic", "Other"];
 export const DENSITY = { easy: 0.15, medium: 0.3, hard: 0.5 };
 export const LYRICS_MAX = 6000;
 
@@ -63,7 +64,7 @@ export function buildGaps(lyrics, density = DENSITY.medium) {
 
 export const isCorrect = (answer, given) => normalize(given) !== "" && normalize(given) === normalize(answer);
 
-export function validateSong({ url, title, level, lyrics }) {
+export function validateSong({ url, title, level, genre, lyrics }) {
   const videoId = parseVideoId(url);
   if (!videoId) return { error: "That does not look like a YouTube link" };
   if (!SONG_LEVELS.includes(level)) return { error: "Choose a level" };
@@ -72,5 +73,5 @@ export function validateSong({ url, title, level, lyrics }) {
   if (lines.length < 4) return { error: "Paste at least 4 lines of lyrics" };
   if (text.length > LYRICS_MAX) return { error: "Lyrics are too long" };
   const clean = String(title ?? "").trim().slice(0, 80);
-  return { videoId, level, lyrics: text, title: clean };
+  return { videoId, level, genre: SONG_GENRES.includes(genre) ? genre : "Other", lyrics: text, title: clean };
 }

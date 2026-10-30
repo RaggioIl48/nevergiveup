@@ -24,8 +24,8 @@ const ago = (iso) => {
 function saveStatus(health) {
   const b = health?.backup;
   if (!b) return h("span", { class: "save-pill unknown" }, "Save status unknown");
-  if (b.problem) return h("a", { class: "save-pill bad", href: "#/me", title: b.problem }, icon("AlertCircle", 16), "Not saved");
-  if (b.lastSavedAt) return h("span", { class: "save-pill ok", title: new Date(b.lastSavedAt).toLocaleString() }, icon("Check", 16), `Progress saved · ${ago(b.lastSavedAt)}`);
+  if (b.problem) return h("a", { class: "save-pill bad", href: "#/me", title: b.problem }, icon("AlertCircle", 14), "Not saved");
+  if (b.lastSavedAt) return h("span", { class: "save-pill ok", title: new Date(b.lastSavedAt).toLocaleString() }, icon("Check", 14), `Saved · ${ago(b.lastSavedAt)}`);
   return h("span", { class: "save-pill unknown" }, "Saving…");
 }
 
@@ -62,7 +62,7 @@ export async function homeView(root, ctx) {
     : nextLesson ? `Up next: ${nextLesson.title}.` : "Keep going with your next unlocked lesson."),
     h("a", { class: "key key-primary wide", href: me.dueCount > 0 ? "#/review" : `#/lesson/${nextId}` }, me.dueCount > 0 ? "Start review" : "Start practice")));
   const pv = phrasalOfDay();
-  root.append(h("a", { class: "pv-tile", href: "#/phrasal" }, h("span", { class: "row-icon" }, icon("BookOpen", 26)), h("span", { class: "row-text" }, h("small", {}, "Phrasal verb of the day"), h("b", {}, pv.pv), h("span", {}, pv.meaning)), icon("ChevronRight", 22)));
+  root.append(h("a", { class: "pv-tile", href: "#/phrasal", "aria-label": `Phrasal verb of the day: ${pv.pv}` }, icon("BookOpen", 18), h("small", {}, "Phrasal of the day"), h("b", {}, pv.pv), icon("ChevronRight", 18)));
   const hasLevel = Boolean(me.user.level);
   const chapter = Math.max(0, units.findIndex((u) => u.lessons.some((l) => l.id === nextId)));
   root.append(h("div", { class: "duo" },

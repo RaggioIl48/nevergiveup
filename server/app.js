@@ -5,7 +5,7 @@ import { timingSafeEqual } from "node:crypto";
 import { hashPassword, verifyPassword, createSession, userFromToken, destroySession, parseCookies, createRateLimiter } from "./auth.js";
 import { lessonIndex, lessonOrder, itemIndex, diagnostic, START_INDEX, LESSON_SIZE } from "../content/index.js";
 import { levelFromDifficulty } from "../content/grade.js";
-import { validateSong } from "../content/songs.js";
+import { validateSong, parseVideoId, SONG_GENRES, SONG_LEVELS } from "../content/songs.js";
 import { aiCoach, NO_KEY_REASON } from "./coach.js";
 import { phrasalById, usesPhrasal } from "../content/phrasal-verbs.js";
 
@@ -61,7 +61,8 @@ export function createApp(db, { inviteCode, production = false, distDir = "dist"
   app.use((req, res, next) => {
     res.set({
       "X-Content-Type-Options": "nosniff",
-      "Referrer-Policy": "same-origin",
+      // YouTube refuses embeds that do not say which site they are on (error 153), so send our origin, never the path.
+      "Referrer-Policy": "strict-origin-when-cross-origin",
       "Content-Security-Policy": "default-src 'self'; script-src 'self' https://www.youtube.com; frame-src https://www.youtube-nocookie.com https://www.youtube.com; img-src 'self' data: blob: https://i.ytimg.com; media-src 'self' blob:; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'",
     });
     next();
@@ -361,12 +362,12 @@ export function createApp(db, { inviteCode, production = false, distDir = "dist"
   });
 
   app.get("/api/songs", requireUser, (req, res) => {
-    const rows = db.prepare("SELECT s.id, s.video_id AS videoId, s.title, s.level, s.user_id AS owner, u.name AS addedBy FROM songs s JOIN users u ON u.id = s.user_id ORDER BY s.id DESC LIMIT 100").all();
+    const rows = db.prepare("SELECT s.id, s.video_id AS videoId, s.title, s.level, s.genre, s.user_id AS owner, u.name AS addedBy FROM songs s JOIN users u ON u.id = s.user_id ORDER BY s.id DESC LIMIT 300").all();
     res.json({ songs: rows.map(({ owner, ...s }) => ({ ...s, mine: owner === req.user.id })) });
   });
 
   app.get("/api/songs/:id", requireUser, (req, res) => {
-    const row = db.prepare("SELECT s.id, s.video_id AS videoId, s.title, s.level, s.lyrics, s.user_id AS owner, u.name AS addedBy FROM songs s JOIN users u ON u.id = s.user_id WHERE s.id = ?").get(Number(req.params.id));
+    const row = db.prepare("SELECT s.id, s.video_id AS videoId, s.title, s.level, s.genre, s.lyrics, s.user_id AS owner, u.name AS addedBy FROM songs s JOIN users u ON u.id = s.user_id WHERE s.id = ?").get(Number(req.params.id));
     if (!row) return res.status(404).json({ error: "Song not found" });
     const { owner, ...song } = row;
     res.json({ song: { ...song, mine: owner === req.user.id } });
@@ -377,12 +378,24 @@ export function createApp(db, { inviteCode, production = false, distDir = "dist"
     if (song.error) return res.status(400).json({ error: song.error });
     try {
       const title = song.title || (await fetchTitle(song.videoId)) || "Untitled song";
-      const info = db.prepare("INSERT INTO songs (user_id, video_id, title, level, lyrics, created_at) VALUES (?, ?, ?, ?, ?, ?)").run(req.user.id, song.videoId, title.slice(0, 80), song.level, song.lyrics, Date.now());
+      const info = db.prepare("INSERT INTO songs (user_id, video_id, title, level, genre, lyrics, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)").run(req.user.id, song.videoId, title.slice(0, 80), song.level, song.genre, song.lyrics, Date.now());
       res.json({ id: Number(info.lastInsertRowid) });
     } catch (error) {
       if (!production) console.error(error);
       res.status(500).json({ error: "Server error" });
     }
+  });
+
+  // The owner can swap the video (e.g. for a lyrics version that allows embedding) or recategorise the song.
+  app.post("/api/songs/:id/update", requireUser, (req, res) => {
+    const row = db.prepare("SELECT * FROM songs WHERE id = ? AND user_id = ?").get(Number(req.params.id), req.user.id);
+    if (!row) return res.status(404).json({ error: "Song not found" });
+    const { url, genre, level } = req.body || {};
+    const videoId = url ? parseVideoId(url) : row.video_id;
+    if (!videoId) return res.status(400).json({ error: "That does not look like a YouTube link" });
+    const next = { videoId, genre: SONG_GENRES.includes(genre) ? genre : row.genre, level: SONG_LEVELS.includes(level) ? level : row.level };
+    db.prepare("UPDATE songs SET video_id = ?, genre = ?, level = ? WHERE id = ?").run(next.videoId, next.genre, next.level, row.id);
+    res.json({ ok: true, ...next });
   });
 
   app.post("/api/songs/:id/delete", requireUser, (req, res) => {
