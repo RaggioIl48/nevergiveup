@@ -388,6 +388,8 @@ const unitsRaw = [
   },
 ];
 
+const SPEAKING_PER_LESSON = 4;
+
 export const units = unitsRaw.map((unit, ui) => ({
   id: `u${ui + 1}`,
   level: unit.level,
@@ -397,8 +399,12 @@ export const units = unitsRaw.map((unit, ui) => ({
     const id = `c${ui + 1}-l${li + 1}`;
     const base = exercises.map((ex, ei) => ({ ...ex, id: `${id}-${ei + 1}` }));
     const extra = [...(EXTRA[id] || []), ...(EXTRA_B2[id] || []), ...(EXTRA_AB[id] || [])].map((ex, ei) => ({ ...ex, id: `${id}-${base.length + ei + 1}` }));
+    // Speaking: the lesson's dictation sentences (already voiced) come back as listen-and-repeat items.
+    // Their ids carry an "s" so the numbered ids of the other items (and saved mistakes) never shift.
+    const speaking = [...base, ...extra].filter((ex) => ex.kind === "dictation").slice(0, SPEAKING_PER_LESSON)
+      .map((ex, si) => ({ kind: "shadow", say: ex.say, why: "Speaking: say the whole sentence clearly; 70% of the words must be recognised.", id: `${id}-s${si + 1}` }));
     // exercises: the authored core set; pool: everything a lesson attempt may draw from.
-    return { id, title, exercises: base, pool: [...base, ...extra] };
+    return { id, title, exercises: base, pool: [...base, ...extra, ...speaking] };
   }),
 }));
 

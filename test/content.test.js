@@ -105,3 +105,11 @@ test("speaking bank: exam-format prompts are the majority from B1", () => {
   assert.ok(exam.length / b1up.length > 0.6, "most B1+ prompts follow an exam format");
   for (const p of speakingPrompts.filter((x) => x.type === "IELTS Part 2")) assert.ok(p.prep === 60 && p.time === 120 && p.q.includes("You should say"), p.id);
 });
+
+test("every lesson attempt includes a speaking item", async () => {
+  const { drawLesson, lessonIndex } = await import("../content/index.js");
+  for (const lesson of lessonIndex.values()) {
+    assert.ok(lesson.pool.some((e) => e.kind === "shadow"), `${lesson.id} has no speaking item`);
+    for (let i = 0; i < 20; i += 1) assert.ok(drawLesson(lesson).some((e) => e.kind === "shadow"), lesson.id);
+  }
+});

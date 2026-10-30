@@ -49,17 +49,24 @@ export const START_INDEX = {
 
 export { units, lessonOrder, diagnostic, LESSON_SIZE };
 
-// A fresh set of LESSON_SIZE items for one attempt: shuffled pool, one of each kind first so the mix of
-// exercise types stays varied, then the rest at random.
+// A fresh set of LESSON_SIZE items for one attempt: shuffled pool, one of each kind first (speaking always
+// among them) so the mix of exercise types stays varied, then the rest at random.
 export function drawLesson(lesson, size = LESSON_SIZE, random = Math.random) {
   const pool = [...lesson.pool];
   for (let i = pool.length - 1; i > 0; i -= 1) {
     const j = Math.floor(random() * (i + 1));
     [pool[i], pool[j]] = [pool[j], pool[i]];
   }
+  // Every attempt includes at least one speaking item.
+  const speak = pool.findIndex((ex) => ex.kind === "shadow");
+  if (speak > 0) pool.unshift(...pool.splice(speak, 1));
   const picked = [];
   const kinds = new Set();
   for (const ex of pool) if (!kinds.has(ex.kind) && picked.length < size) { kinds.add(ex.kind); picked.push(ex); }
   for (const ex of pool) if (!picked.includes(ex) && picked.length < size) picked.push(ex);
+  for (let i = picked.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(random() * (i + 1));
+    [picked[i], picked[j]] = [picked[j], picked[i]];
+  }
   return picked;
 }
