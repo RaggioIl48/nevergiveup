@@ -6,3 +6,6 @@ data
 .rsc
 .vscode
 *.db*
+01-TOOLS
+02-DOCS
+**/node_modules

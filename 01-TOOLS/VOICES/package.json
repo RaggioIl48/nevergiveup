@@ -1,0 +1,11 @@
+{
+  "name": "upword-voices",
+  "private": true,
+  "type": "module",
+  "description": "Pre-generates natural English voices (Kokoro TTS) for listening tasks, lesson audio and phrasal verb examples.",
+  "scripts": { "generate": "node generate.mjs" },
+  "dependencies": {
+    "@breezystack/lamejs": "1.2.7",
+    "kokoro-js": "1.2.1"
+  }
+}

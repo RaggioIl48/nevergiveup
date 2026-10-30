@@ -525,3 +525,16 @@ div.rubric .score-big, .feedback-card .score-big { margin: -8px 0 0; line-height
 
 .lab-body .audio-row { flex-wrap: wrap; }
 .lab-body .audio-row > .key { flex: 1 1 auto; }
+
+/* Blocked video: a single collapsed line that can be hidden */
+details.video-blocked { display: block; padding: 0; gap: 0; border-width: 1px; border-radius: var(--r-sm); background: var(--fill); border-color: var(--line); }
+details.video-blocked summary { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 4px 4px 4px 12px; list-style: none; cursor: pointer; font-size: 0.85rem; }
+details.video-blocked summary::-webkit-details-marker { display: none; }
+details.video-blocked summary > svg { color: var(--wrong); flex: none; }
+details.video-blocked summary span { flex: 1; min-width: 0; }
+details.video-blocked summary small { color: var(--info); font-weight: 700; }
+details.video-blocked[open] summary small { display: none; }
+details.video-blocked .notice-close { width: 36px; height: 36px; flex: none; }
+details.video-blocked > :not(summary) { margin: 0 12px 12px; }
+details.video-blocked p { font-size: 0.85rem; color: var(--muted); }
+.pv-inline { padding: 6px 10px; min-height: 40px; font-size: 0.85rem; }

@@ -321,7 +321,7 @@ export const aiCoach = {
   },
   async review({ prompt, transcript, seconds, phrasal = null }) {
     const extra = phrasal
-      ? `\nPhrasal verb of the day: "${phrasal.pv}" (${phrasal.meaning}). In "phrasal", say whether the learner used it (any tense), whether the meaning and grammar were correct, and give a one-sentence comment with a correct example if needed.`
+      ? `\nPhrasal verb of the day: "${phrasal.pv}" (${phrasal.meaning}). In "phrasal", say whether the learner used it (any tense), whether the meaning and grammar were correct, and give a one-sentence comment with a correct example if needed. This is an OPTIONAL bonus: never lower any score, the level or the task criterion because it was not used, and do not mention it in strengths, fixes or the tip.`
       : "";
     const raw = await generate(SYSTEM, `Task: ${prompt}\nSpeaking time: about ${seconds} seconds${extra}\nTranscript:\n"""\n${transcript}\n"""`, SCHEMA, 1500);
     return calibrateSpeaking(cleanFeedback(raw), { transcript, seconds });

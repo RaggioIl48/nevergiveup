@@ -1,11 +1,48 @@
+import { textKey } from "../content/tts-key.js";
+
 const synth = window.speechSynthesis;
 const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
 export const canSpeak = Boolean(synth);
 export const canListen = Boolean(Recognition);
 
+// Natural recordings pre-generated with Kokoro (01-TOOLS/VOICES). The browser voice is only the fallback
+// for text that has no recording yet. One <audio> element is reused so iOS keeps it unlocked after a tap.
+const TTS = "/audio/tts/";
+let manifest = null;
+fetch(`${TTS}manifest.json`).then((r) => (r.ok ? r.json() : null)).then((m) => { manifest = m; }).catch(() => {});
+const player = typeof Audio === "function" ? new Audio() : null;
+if (player) player.setAttribute("playsinline", "");
+let playing = null;
+
+function stopRecording() {
+  if (!player) return;
+  player.onended = null;
+  player.onerror = null;
+  player.pause();
+  clearTimeout(playing);
+}
+
+// Plays one file; calls fail() if it cannot (missing file, autoplay refused), so the caller can fall back.
+function playFile(file, rate, onEnd, fail) {
+  stopRecording();
+  player.src = TTS + file;
+  player.playbackRate = Math.max(0.5, Math.min(1.5, rate / 0.95));
+  player.onended = () => onEnd?.();
+  player.onerror = () => fail();
+  player.play().catch(fail);
+}
+
 export function speak(text, { rate = 0.95, onEnd } = {}) {
+  const file = manifest?.say?.[textKey(text)];
+  synth?.cancel();
+  if (file && player) return playFile(file, rate, onEnd, () => speakSynth(text, { rate, onEnd }));
+  speakSynth(text, { rate, onEnd });
+}
+
+function speakSynth(text, { rate, onEnd }) {
   if (!synth) return onEnd?.();
+  stopRecording();
   synth.cancel();
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = "en-US";
@@ -18,6 +55,7 @@ export function speak(text, { rate = 0.95, onEnd } = {}) {
 }
 
 export function stopSpeaking() {
+  stopRecording();
   synth?.cancel();
 }
 
@@ -31,14 +69,32 @@ function pickVoices() {
   return { A: a, B: b };
 }
 
-// Reads a script [{ who, text }] with two voices. Returns a stop function.
-export function playScript(script, { rate = 0.92, onEnd } = {}) {
-  if (!synth) { onEnd?.(); return () => {}; }
+// Reads a script [{ who, text }] with two voices: the task's recordings when they exist (id), otherwise the
+// browser voices. If a recording fails mid-way, the rest continues with the browser voice. Returns a stop function.
+export function playScript(script, { rate = 0.92, onEnd, id } = {}) {
+  const files = manifest?.tasks?.[id];
+  let stopped = false;
+  if (player && files?.length === script.length && files.every(Boolean)) {
+    const next = (i) => {
+      if (stopped) return;
+      if (i >= script.length) return onEnd?.();
+      playFile(files[i], 0.95, () => { playing = setTimeout(() => next(i + 1), 350); }, () => { if (!stopped) synthFrom(i); });
+    };
+    next(0);
+    return () => { stopped = true; stopRecording(); synth?.cancel(); };
+  }
+  synthFrom(0);
+  return () => { stopped = true; stopRecording(); synth?.cancel(); };
+
+  function synthFrom(start) { synthScript(script, start, rate, onEnd, () => stopped); }
+}
+
+function synthScript(script, start, rate, onEnd, isStopped) {
+  if (!synth) return onEnd?.();
   synth.cancel();
   const voices = pickVoices();
-  let stopped = false;
   const next = (i) => {
-    if (stopped) return;
+    if (isStopped()) return;
     if (i >= script.length) return onEnd?.();
     const u = new SpeechSynthesisUtterance(script[i].text);
     u.lang = "en-US";
@@ -51,8 +107,7 @@ export function playScript(script, { rate = 0.92, onEnd } = {}) {
     u.onerror = () => next(i + 1);
     synth.speak(u);
   };
-  next(0);
-  return () => { stopped = true; synth.cancel(); };
+  next(start);
 }
 
 export function listen({ onText, onConfidence, onEnd, onError, continuous = false }) {

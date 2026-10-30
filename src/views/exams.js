@@ -34,7 +34,7 @@ function audioPlayer(task, { once, onStart }) {
       audio.play().catch(() => { status.textContent = "Tap play again to allow audio."; started = false; btn.disabled = false; });
       stop = () => audio.pause();
     } else {
-      stop = playScript(task.script, { onEnd: done });
+      stop = playScript(task.script, { onEnd: done, id: task.id });
     }
   } }, icon("Play", 22), once ? "Play (once)" : "Play");
   return { el: h("div", { class: "audio-row" }, btn, status), stop: () => stop() };

@@ -1,4 +1,4 @@
-const CACHE = "upword-v11";
+const CACHE = "upword-v12";
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(["/", "/icon.svg", "/manifest.webmanifest"])));
@@ -12,7 +12,8 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const { request } = event;
   const url = new URL(request.url);
-  if (request.method !== "GET" || url.origin !== location.origin || url.pathname.startsWith("/api")) return;
+  // Audio goes straight to the network: Safari plays media with range requests, which a cache would break.
+  if (request.method !== "GET" || url.origin !== location.origin || url.pathname.startsWith("/api") || url.pathname.startsWith("/audio/")) return;
   event.respondWith(
     fetch(request)
       .then((response) => {

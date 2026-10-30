@@ -31,7 +31,7 @@ export function labFrame(root, ctx, title, ...children) {
 // Result line for the phrasal verb of the day inside the speaking feedback.
 function phrasalResult(p) {
   const state = !p.used ? "missing" : p.correct ? "ok" : "bad";
-  const title = { ok: `You used “${p.pv}” correctly`, bad: `You used “${p.pv}”, but not quite right`, missing: `You didn’t use “${p.pv}” this time` }[state];
+  const title = { ok: `You used “${p.pv}” correctly`, bad: `You used “${p.pv}”, but not quite right`, missing: `Bonus: try “${p.pv}” next time (it does not affect your score)` }[state];
   return h("div", { class: `phrasal-result ${state}` }, icon(state === "ok" ? "Check" : state === "bad" ? "AlertCircle" : "Info", 20), h("div", {}, h("b", {}, title), p.comment ? h("small", {}, p.comment) : ""));
 }
 
@@ -143,7 +143,7 @@ export async function speakingView(root, ctx) {
     });
 
     labFrame(root, ctx, "Speaking",
-      h("a", { class: "phrasal-chip", href: "#/phrasal" }, h("small", {}, "Phrasal verb of the day · try to use it"), h("b", {}, today.pv), h("span", {}, today.meaning)),
+      h("a", { class: "pv-tile pv-inline", href: "#/phrasal", title: `Optional bonus: try to use “${today.pv}” (${today.meaning})` }, icon("BookOpen", 16), h("small", {}, "Bonus"), h("b", {}, today.pv), icon("ChevronRight", 16)),
       h("div", { class: "tags mode-tags", role: "group", "aria-label": "Prompt type" }, Object.entries(MODES).map(([key, label]) => h("button", {
         class: "tag chip-btn", type: "button", "aria-pressed": String(key === mode),
         onClick: () => { mode = key; try { localStorage.setItem("speaking-mode", key); } catch {} prompt = pick(poolFor(mode)); render(); },
@@ -305,8 +305,17 @@ export async function songView(root, ctx, id) {
   const tapHint = h("p", { class: "player-hint", hidden: true }, "On iPhone, tap the video once to start it.");
   // Explain a blocked video and let the owner swap it without retyping the lyrics.
   const newUrl = h("input", { class: "answer-input", type: "url", inputmode: "url", autocapitalize: "none", autocorrect: "off", placeholder: "Paste a lyrics or audio version link", "aria-label": "New YouTube link" });
-  const fallback = h("div", { class: "video-blocked", hidden: true, role: "status" },
-    h("p", {}, h("b", {}, "This video can’t play inside the app. "), "It is private, removed, or its owner only allows it on YouTube (common with official music videos)."),
+  // A one-line, collapsed notice: details only on demand, and it can be dismissed for this song.
+  const hideKey = `song-notice-hidden:${song.id}`;
+  let videoFailed = false;
+  const close = h("button", { class: "icon-btn notice-close", type: "button", "aria-label": "Hide this notice", onClick: (e) => {
+    e.preventDefault();
+    fallback.hidden = true;
+    try { localStorage.setItem(hideKey, "1"); } catch { /* not kept */ }
+  } }, icon("X", 16));
+  const fallback = h("details", { class: "video-blocked", hidden: true },
+    h("summary", {}, icon("AlertCircle", 16), h("span", {}, "This video can’t play here"), h("small", {}, "Options"), close),
+    h("p", {}, "It is private, removed, or its owner only allows it on YouTube (common with official music videos)."),
     h("div", { class: "audio-row" },
       h("a", { class: "key key-quiet", href: searchUrl(song.title), target: "_blank", rel: "noopener" }, "Find a playable version"),
       h("a", { class: "key key-quiet", href: `https://www.youtube.com/watch?v=${song.videoId}`, target: "_blank", rel: "noopener" }, "Open on YouTube")),
@@ -327,7 +336,7 @@ export async function songView(root, ctx, id) {
     if (player.getPlayerState() === 1) return player.pauseVideo();
     player.playVideo();
     // iOS only lets a video start from a tap on the video itself; if nothing happens, say so.
-    setTimeout(() => { if (player?.getPlayerState?.() !== 1) tapHint.hidden = false; }, 1500);
+    setTimeout(() => { if (!videoFailed && player?.getPlayerState?.() !== 1) tapHint.hidden = false; }, 1500);
   } }, icon("Play", 20), toggleLabel);
 
   const lyricsBox = h("div", { class: "lyrics" });
@@ -394,7 +403,7 @@ export async function songView(root, ctx, id) {
       videoId: song.videoId, host: "https://www.youtube-nocookie.com",
       playerVars: { playsinline: 1, rel: 0, fs: 0, iv_load_policy: 3, origin: location.origin },
       events: {
-        onError: () => { fallback.hidden = false; tapHint.hidden = true; },
+        onError: () => { videoFailed = true; tapHint.hidden = true; try { if (localStorage.getItem(hideKey)) return; } catch { /* show it */ } fallback.hidden = false; },
         onStateChange: (e) => { toggleLabel.textContent = e.data === 1 ? "Pause" : "Play"; if (e.data === 1) tapHint.hidden = true; },
       },
     });

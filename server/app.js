@@ -286,7 +286,7 @@ export function createApp(db, { inviteCode, production = false, distDir = "dist"
       // The transcript check is the ground truth for "used it at all"; the model judges whether it was used correctly.
       if (target) {
         const used = usesPhrasal(text, target);
-        feedback.phrasal = { pv: target.pv, used, correct: used && feedback.phrasal?.correct !== false, comment: feedback.phrasal?.comment || "" };
+        feedback.phrasal = { pv: target.pv, used, correct: used && feedback.phrasal?.correct !== false, comment: used ? feedback.phrasal?.comment || "" : "" };
       }
       res.json({ available: true, feedback });
     } catch (error) {
